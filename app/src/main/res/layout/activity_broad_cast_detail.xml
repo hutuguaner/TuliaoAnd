@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    tools:context=".activity.BroadCastDetailActivity">
+
+    <ImageView
+        android:layout_width="@dimen/dp_10"
+        android:layout_height="@dimen/dp_18_5"
+        android:layout_marginLeft="@dimen/dp_15_5"
+        android:layout_marginTop="@dimen/dp_33"
+        android:src="@mipmap/ic_arrow_left" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="@dimen/dp_34"
+        android:text="广播详情"
+        android:textColor="@color/regist"
+        android:textSize="@dimen/sp_17" />
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dp_603_5"
+        android:layout_alignParentBottom="true"
+        android:background="@color/yellow">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_570"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="@dimen/dp_7"
+            android:padding="@dimen/dp_15">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/white">
+
+            </RelativeLayout>
+
+        </RelativeLayout>
+
+        <!---->
+        <ImageView
+            android:id="@+id/iv_broadcastdetail_avatar"
+            android:layout_width="@dimen/dp_75"
+            android:layout_height="@dimen/dp_75"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="@dimen/dp_15"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/iv_broadcastdetail_avatar"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="@dimen/dp_12"
+            android:text="何娜娜"
+            android:textColor="@color/regist"
+            android:textSize="@dimen/sp_17" />
+
+    </RelativeLayout>
+
+
+</RelativeLayout>

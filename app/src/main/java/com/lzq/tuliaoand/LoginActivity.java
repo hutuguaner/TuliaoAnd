@@ -10,6 +10,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.blankj.utilcode.util.ToastUtils;
@@ -23,7 +24,7 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
     private EditText etTel, etPwd;
     private Button btLogin;
     private TextView tvRegist, tvResetPwd;
-
+    private ImageView ivClose;
 
 
     @Override
@@ -31,16 +32,22 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        initView();
+
+    }
+
+    private void initView() {
         etTel = findViewById(R.id.et_login_tel);
         etPwd = findViewById(R.id.et_login_pwd);
         btLogin = findViewById(R.id.bt_login_login);
         tvRegist = findViewById(R.id.tv_login_regist);
         tvResetPwd = findViewById(R.id.tv_login_resetpwd);
-
+        ivClose = findViewById(R.id.iv_login_close);
         //
         btLogin.setOnClickListener(this);
         tvRegist.setOnClickListener(this);
         tvResetPwd.setOnClickListener(this);
+        ivClose.setOnClickListener(this);
     }
 
     @Override
@@ -54,6 +61,9 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
                 break;
             case R.id.tv_login_resetpwd:
                 startActivity(new Intent(this, ResetPwdActivity.class));
+                break;
+            case R.id.iv_login_close:
+                this.finish();
                 break;
         }
     }

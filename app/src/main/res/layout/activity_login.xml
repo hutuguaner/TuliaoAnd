@@ -26,6 +26,7 @@
         android:textSize="@dimen/sp_17" />
 
     <ImageView
+        android:id="@+id/iv_login_close"
         android:layout_width="@dimen/dp_19"
         android:layout_height="@dimen/dp_19"
         android:layout_alignParentRight="true"
@@ -46,7 +47,7 @@
             android:layout_height="@dimen/dp_18_5"
             android:layout_centerVertical="true"
             android:layout_marginLeft="@dimen/dp_21"
-            android:src="@mipmap/ic_lock" />
+            android:src="@mipmap/ic_phone" />
 
         <EditText
             android:id="@+id/et_login_tel"

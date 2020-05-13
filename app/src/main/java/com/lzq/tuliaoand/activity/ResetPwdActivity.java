@@ -40,7 +40,7 @@ public class ResetPwdActivity extends BaseActivity implements View.OnClickListen
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.iv_resetpwd_back:
-
+                this.finish();
                 break;
             case R.id.tv_resetpwd_getcode:
 

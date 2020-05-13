@@ -42,7 +42,7 @@ public class RegistActivity extends BaseActivity implements View.OnClickListener
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.iv_regist_back:
-
+                this.finish();
                 break;
             case R.id.tv_regist_getcode:
 

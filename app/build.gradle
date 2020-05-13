@@ -5,7 +5,7 @@ android {
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "com.lzq.tuliaoand"
-        minSdkVersion 15
+        minSdkVersion 19
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -30,4 +30,14 @@ dependencies {
     implementation 'com.blankj:utilcodex:1.26.0'
 
     implementation 'com.github.lzyzsd:jsbridge:1.0.4'
+    //
+    implementation 'org.osmdroid:osmdroid-android:6.1.6'
+    //
+    implementation 'pub.devrel:easypermissions:3.0.0'
+    //
+    implementation project(path: ':sweet-alert-dialog')
+    //
+    implementation 'com.lzy.net:okgo:3.0.4'
+
+
 }

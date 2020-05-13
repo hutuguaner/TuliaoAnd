@@ -6,14 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".activity.MainActivity">
 
-    <com.github.lzyzsd.jsbridge.BridgeWebView
-        android:id="@+id/bwv_map"
+    <org.osmdroid.views.MapView
+        android:id="@+id/mv_main"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/rl_main_input" />
+        android:layout_height="match_parent" />
 
     <RelativeLayout
-
         android:id="@+id/rl_main_input"
         android:layout_width="match_parent"
         android:layout_height="@dimen/dp_60"
@@ -39,7 +37,8 @@
             android:background="@mipmap/ic_kuang_gray_s">
 
             <EditText
-                android:layout_width="wrap_content"
+                android:id="@+id/et_main_broad"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="@dimen/dp_14"

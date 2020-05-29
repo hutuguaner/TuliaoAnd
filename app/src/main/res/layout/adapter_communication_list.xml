@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/dp_85">
+
+    <ImageView
+        android:id="@+id/iv_adapter_communication_list_avatar"
+        android:layout_width="@dimen/dp_63"
+        android:layout_height="@dimen/dp_63"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="@dimen/dp_13" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="@dimen/dp_12"
+        android:layout_toRightOf="@+id/iv_adapter_communication_list_avatar"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_adapter_communication_list_msgnewest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/txtblack"
+            android:textSize="@dimen/sp_16" />
+
+        <TextView
+            android:id="@+id/tv_adapter_communication_list_timenewestmsg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dp_10"
+            android:textColor="@color/txtgray"
+            android:textSize="@dimen/sp_13" />
+    </LinearLayout>
+
+
+    <TextView
+        android:id="@+id/tv_adapter_communication_list_uncheckmsgsize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="@dimen/dp_15"
+        android:background="@android:color/holo_orange_light"
+        android:padding="@dimen/dp_2"
+        android:textColor="@color/txtblack"
+        android:textSize="@dimen/sp_12" />
+
+</RelativeLayout>

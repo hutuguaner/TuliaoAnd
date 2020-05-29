@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.lzq.tuliaoand">
 
-
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -34,8 +33,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:usesCleartextTraffic="true"
         tools:replace="android:icon">
-        <activity android:name=".activity.UserDetailActivity"></activity>
+        <activity android:name=".activity.CommunicationListActivity"></activity>
+        <activity android:name=".activity.UserDetailActivity" />
         <activity android:name=".activity.BroadCastDetailActivity" />
         <activity android:name=".activity.BaseActivity" />
         <activity android:name=".LoginActivity" />

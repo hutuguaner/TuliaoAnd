@@ -5,6 +5,7 @@ public enum SPKey implements UniqueKeyListener {
 
     IS_JUST_INSTALL,// 是否刚刚安装
     IS_LOGIN,//是否登录
+    EMAIL_LOGINED,//当前登录的 用户的邮箱
     ;
 
     @Override

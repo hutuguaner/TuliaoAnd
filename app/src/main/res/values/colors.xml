@@ -12,6 +12,7 @@
     <color name="personal_line_gray">#e0e0e0</color>
 
     <color name="txtblack">#333333</color>
+    <color name="txtgray">#999999</color>
     <color name="lightblue">#3F81FC</color>
 
     <color name="gray_press">#F2F2F2</color>

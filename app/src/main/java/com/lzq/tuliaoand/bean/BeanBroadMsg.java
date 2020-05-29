@@ -3,7 +3,8 @@ package com.lzq.tuliaoand.bean;
 public class BeanBroadMsg {
 
     private String content;
-    private String from;
+
+    private UserBean from;
 
     public BeanBroadMsg() {
     }
@@ -17,11 +18,11 @@ public class BeanBroadMsg {
         this.content = content;
     }
 
-    public String getFrom() {
+    public UserBean getFrom() {
         return from;
     }
 
-    public void setFrom(String from) {
+    public void setFrom(UserBean from) {
         this.from = from;
     }
 }

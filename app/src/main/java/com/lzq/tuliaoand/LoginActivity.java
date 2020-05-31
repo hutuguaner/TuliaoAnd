@@ -17,8 +17,6 @@ import android.widget.TextView;
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
-import com.koushikdutta.async.http.AsyncHttpClient;
-import com.koushikdutta.async.http.WebSocket;
 import com.lzq.tuliaoand.activity.BaseActivity;
 import com.lzq.tuliaoand.activity.MainActivity;
 import com.lzq.tuliaoand.activity.RegistActivity;
@@ -35,10 +33,8 @@ import org.json.JSONObject;
 
 public class LoginActivity extends BaseActivity implements View.OnClickListener {
 
-    private EditText etEmail, etPwd;
+    private EditText etEmail;
     private Button btLogin;
-    private TextView tvRegist, tvResetPwd;
-    private ImageView ivClose;
 
 
     @Override
@@ -56,16 +52,9 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
         if (!StringUtils.isEmpty(emailLogined)) {
             etEmail.setText(emailLogined);
         }
-        etPwd = findViewById(R.id.et_login_pwd);
         btLogin = findViewById(R.id.bt_login_login);
-        tvRegist = findViewById(R.id.tv_login_regist);
-        tvResetPwd = findViewById(R.id.tv_login_resetpwd);
-        ivClose = findViewById(R.id.iv_login_close);
         //
         btLogin.setOnClickListener(this);
-        tvRegist.setOnClickListener(this);
-        tvResetPwd.setOnClickListener(this);
-        ivClose.setOnClickListener(this);
     }
 
     @Override
@@ -74,27 +63,13 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
             case R.id.bt_login_login:
                 loginCheck();
                 break;
-            case R.id.tv_login_regist:
-                startActivity(new Intent(this, RegistActivity.class));
-                break;
-            case R.id.tv_login_resetpwd:
-                startActivity(new Intent(this, ResetPwdActivity.class));
-                break;
-            case R.id.iv_login_close:
-                this.finish();
-                break;
         }
     }
 
     private void loginCheck() {
         String tel = etEmail.getText().toString();
-        String pwd = etPwd.getText().toString();
         if (tel == null || tel.trim().equals("")) {
             ToastUtils.showLong("type input tel please!");
-            return;
-        }
-        if (pwd == null || pwd.trim().equals("")) {
-            ToastUtils.showLong("type input pwd please!");
             return;
         }
         loginRequest();
@@ -103,19 +78,13 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
     private void loginRequest() {
         String email, pwd;
         email = etEmail.getText().toString();
-        pwd = etPwd.getText().toString();
         if (StringUtils.isEmpty(email)) {
             ToastUtils.showLong("请输入邮箱");
-            return;
-        }
-        if (StringUtils.isEmpty(pwd)) {
-            ToastUtils.showLong("请输入密码");
             return;
         }
         JSONObject params = new JSONObject();
         try {
             params.put("email", email);
-            params.put("password", pwd);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -142,8 +111,8 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
                     if (code == 0) {
                         String email = jsonObject.getString("data");
                         SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), email);
-                        SPUtils.getInstance().put(SPKey.IS_LOGIN.getUniqueName(),true);
                         LoginActivity.this.finish();
+                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
                     } else {
                         String msg = jsonObject.getString("msg");
                         error(msg);

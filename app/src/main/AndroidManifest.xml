@@ -35,14 +35,19 @@
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:usesCleartextTraffic="true"
         tools:replace="android:icon">
-        <activity android:name=".activity.CommunicationListActivity"></activity>
+        <service
+            android:name=".services.MyService"
+            android:enabled="true"
+            android:exported="true"></service>
+
+        <activity android:name=".activity.CommunicationListActivity" />
         <activity android:name=".activity.UserDetailActivity" />
         <activity android:name=".activity.BroadCastDetailActivity" />
         <activity android:name=".activity.BaseActivity" />
-        <activity android:name=".LoginActivity" />
+        <activity android:name=".activity.MainActivity" />
         <activity android:name=".activity.ResetPwdActivity" />
         <activity android:name=".activity.RegistActivity" />
-        <activity android:name=".activity.MainActivity">
+        <activity android:name=".LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

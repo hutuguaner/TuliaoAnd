@@ -1,9 +1,13 @@
 package com.lzq.tuliaoand;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
+import android.content.Intent;
 import android.os.Environment;
+import android.util.Log;
 
 import com.blankj.utilcode.util.CrashUtils;
+import com.lzq.tuliaoand.common.Const;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.cache.CacheEntity;
 import com.lzy.okgo.cache.CacheMode;
@@ -11,15 +15,23 @@ import com.lzy.okgo.cookie.CookieJarImpl;
 import com.lzy.okgo.cookie.store.DBCookieStore;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
+import com.orhanobut.logger.AndroidLogAdapter;
+import com.orhanobut.logger.Logger;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.osmdroid.config.Configuration;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 
 import okhttp3.OkHttpClient;
 
 public class App extends Application {
 
+
+
+    @SuppressLint("MissingPermission")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -28,10 +40,13 @@ public class App extends Application {
         CrashUtils.init(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + "/crash");
         //
         okgoInit();
+        //
+        Logger.addLogAdapter(new AndroidLogAdapter());
     }
 
 
-    private void initMap(){
+
+    private void initMap() {
         //设置 底图引擎 底图 瓦片 缓存 路径
         File dirCache = new File(getExternalCacheDir().getAbsolutePath() + "/tiles");
         if (!dirCache.exists()) dirCache.mkdirs();
@@ -41,7 +56,7 @@ public class App extends Application {
         if (!dirOfflineImagePath.exists()) dirOfflineImagePath.mkdirs();
         Configuration.getInstance().setOsmdroidBasePath(dirOfflineImagePath);
         //设置缓存大小
-        Configuration.getInstance().setTileFileSystemCacheTrimBytes(1024l*1024*1024*10);
+        Configuration.getInstance().setTileFileSystemCacheTrimBytes(1024l * 1024 * 1024 * 10);
 
         //设置初始内存缓存大小瓦片的多少，最少是3*3
         Configuration.getInstance().setCacheMapTileCount((short) 12);
@@ -72,4 +87,6 @@ public class App extends Application {
                 .addCommonHeaders(headers)                      //全局公共头
                 .addCommonParams(params);
     }
+
+
 }

@@ -5,13 +5,16 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
@@ -24,19 +27,19 @@ import android.widget.Toast;
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
-import com.koushikdutta.async.AsyncServer;
-import com.koushikdutta.async.AsyncSocket;
-import com.koushikdutta.async.ByteBufferList;
-import com.koushikdutta.async.DataEmitter;
-import com.koushikdutta.async.callback.CompletedCallback;
-import com.koushikdutta.async.callback.ConnectCallback;
-import com.koushikdutta.async.callback.DataCallback;
-import com.koushikdutta.async.callback.WritableCallback;
+import com.lzq.tuliaoand.App;
 import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
+import com.lzq.tuliaoand.bean.Conversation;
+import com.lzq.tuliaoand.bean.Message;
+import com.lzq.tuliaoand.bean.User;
 import com.lzq.tuliaoand.common.Const;
 import com.lzq.tuliaoand.common.SPKey;
+import com.orhanobut.logger.Logger;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
@@ -48,17 +51,20 @@ import org.w3c.dom.Text;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener, View.OnFocusChangeListener {
+public class MainActivity extends BaseActivity implements View.OnClickListener ,com.lzq.tuliaoand.subutil.util.LocationUtils.OnLocationChangeListener {
 
     private MapView mapView;
     private MapController mapController;
     private ImageView ivLocate, ivSend, ivMessage;
     private EditText etBroadcast;
 
-    private AsyncSocket asyncSocket = null;
+    private volatile List<User> users;
+    private Location location;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +75,143 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         initMap();
         initFriendlyToast();
 
-        connectToServer();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
+
+    }
+
+
+
+
+
+    private void receiveUserQuit(String data) {
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(data);
+            if (users == null) users = new ArrayList<>();
+            String email = jsonObject.getString("email");
+            User user = new User();
+            user.setEmail(email);
+            if (users.contains(user)) {
+                users.remove(user);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void receiveMessages(String data) {
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(data);
+            if (users == null) users = new ArrayList<>();
+            String from = jsonObject.getString("from");
+            String content = jsonObject.getString("content");
+            long time = jsonObject.getLong("time");
+            Message message = new Message();
+            message.setEmailFrom(from);
+            message.setContent(content);
+            message.setTimeStamp(time);
+
+            User user = new User();
+            user.setEmail(from);
+
+            if (users.contains(user)) {
+                int index = users.indexOf(user);
+                Conversation conversation = new Conversation();
+                conversation.setOppositeEmail(from);
+                if (users.get(index).getConversations().contains(conversation)) {
+                    int indexConversation = users.get(index).getConversations().indexOf(conversation);
+                    users.get(index).getConversations().get(indexConversation).getMessages().add(message);
+                } else {
+                    users.get(index).getConversations().add(conversation);
+                }
+
+            } else {
+                List<Conversation> conversations = new ArrayList<>();
+                Conversation conversation = new Conversation();
+                conversation.setOppositeEmail(from);
+                conversation.setMessages(Arrays.asList(message));
+                user.setConversations(conversations);
+                users.add(user);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void receivePositions(String data) {
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(data);
+            if (users == null) users = new ArrayList<>();
+            String email = jsonObject.getString("email");
+            double lng = jsonObject.getDouble("lng");
+            double lat = jsonObject.getDouble("lat");
+            User user = new User();
+            user.setEmail(email);
+
+            if (email.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
+                locateMarker.setPosition(new GeoPoint(lat, lng));
+                mapView.invalidate();
+                return;
+            }
+
+            if (users.contains(user)) {
+                int index = users.indexOf(user);
+                users.get(index).setLat(lat);
+                users.get(index).setLng(lng);
+                users.get(index).getMarker().setPosition(new GeoPoint(lat, lng));
+                mapView.invalidate();
+            } else {
+                user.setLng(lng);
+                user.setLat(lat);
+                Marker marker = new Marker(mapView);
+                marker.setPosition(new GeoPoint(lat, lng));
+                marker.setIcon(getResources().getDrawable(R.mipmap.ic_postion_curr));
+                mapView.getOverlayManager().add(marker);
+                mapView.invalidate();
+                user.setMarker(marker);
+                users.add(user);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void receiveBroadcasts(String data) {
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(data);
+            if (users == null) users = new ArrayList<>();
+            String email = jsonObject.getString("email");
+            String content = jsonObject.getString("broadcast");
+            User user = new User();
+            user.setEmail(email);
+            user.setBroadcast(content);
+            if (users.contains(user)) {
+                int index = users.indexOf(user);
+                users.get(index).setBroadcast(content);
+                users.get(index).getMarker().setTitle(content);
+                users.get(index).getMarker().showInfoWindow();
+                mapView.invalidate();
+            } else {
+                users.add(user);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -78,28 +220,29 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     protected void onResume() {
         super.onResume();
         mapView.onResume();
-        locateCurrPosition();
-        if (asyncSocket != null) {
-            asyncSocket.resume();
-        } else {
-            connectToServer();
-        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mapView.onPause();
-        if (asyncSocket != null) {
-            asyncSocket.pause();
-        }
-
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (asyncSocket != null) asyncSocket.close();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        com.lzq.tuliaoand.subutil.util.LocationUtils.unregister();
+
     }
 
     private void initView() {
@@ -111,7 +254,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         ivMessage = findViewById(R.id.iv_main_twobubble);
         ivMessage.setOnClickListener(this);
         etBroadcast = findViewById(R.id.et_main_broad);
-        etBroadcast.setOnFocusChangeListener(this);
     }
 
     private void initMap() {
@@ -186,28 +328,34 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         }
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
         //拿到权限后 才能设置的一些配置项 放这里
-
+        updataLocation();
     }
 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------
     //定位到当前位置
-    private void locateCurrPosition() {
+    private void updataLocation() {
         show();
+
         Location location = LocationUtils.getLastKnownLocation((LocationManager) getSystemService(Context.LOCATION_SERVICE));
         if (location == null) {
             dismiss();
             ToastUtils.showLong("定位失败");
             return;
         } else {
-            mapZoomTo(location.getLongitude(), location.getLatitude());
-            showLocateMarker(location.getLongitude(), location.getLatitude());
+            this.location = location;
             dismiss();
         }
     }
 
+
+    private void uploadPostion() {
+        Location location = LocationUtils.getLastKnownLocation((LocationManager) getSystemService(LOCATION_SERVICE));
+        sendPostionToServer(location.getLongitude(), location.getLatitude());
+    }
+
     private void mapZoomTo(double lon, double lat) {
         mapLocateTo(lon, lat);
-        mapController.setZoom(18);
+        //mapController.setZoom(18);
     }
 
     private void mapLocateTo(double lon, double lat) {
@@ -230,11 +378,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             mapView.invalidate();
         } else {
             locateMarker.setPosition(geoPoint);
-            locateMarker.setIcon(getResources().getDrawable(R.mipmap.ic_postion_curr));
+            locateMarker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
+
             mapView.getOverlayManager().add(locateMarker);
             hasAddLocateMarker = true;
         }
     }
+
 
     private void showLocateMarker(double lon, double lat) {
         GeoPoint geoPoint = new GeoPoint(lat, lon);
@@ -246,37 +396,27 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.iv_main_locate:
-                locateCurrPosition();
+                updataLocation();
+                showLocateMarker(location.getLongitude(), location.getLatitude());
+                mapZoomTo(location.getLongitude(), location.getLatitude());
                 break;
             case R.id.iv_main_twobubble:
-                if (isLogin()) {
-                    startMsgListActivity();
-
-                } else {
-                    startLoginActivity();
-                }
+                startMsgListActivity();
                 break;
             case R.id.iv_main_paperairplane:
-                if (isLogin()) {
-                    String broadMsg = etBroadcast.getText().toString();
-                    if (!StringUtils.isTrimEmpty(broadMsg)) {
-                        if (broadMsg.length() > 20) {
-                            ToastUtils.showShort("最多输入20个字符");
-                            return;
-                        }
-                        sendBroadMsg(broadMsg);
+                String broadMsg = etBroadcast.getText().toString();
+                if (!StringUtils.isTrimEmpty(broadMsg)) {
+                    if (broadMsg.length() > 20) {
+                        ToastUtils.showShort("最多输入20个字符");
+                        return;
                     }
-                } else {
-                    startLoginActivity();
+
+                    sendBroadCastToServer(broadMsg);
                 }
                 break;
         }
     }
 
-    private boolean isLogin() {
-        boolean isLogin = SPUtils.getInstance().getBoolean(SPKey.IS_LOGIN.getUniqueName(), false);
-        return isLogin;
-    }
 
     private void startLoginActivity() {
         Intent loginIntent = new Intent(MainActivity.this, LoginActivity.class);
@@ -288,72 +428,35 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         startActivity(msgListIntent);
     }
 
+
+    private void sendPostionToServer(double lng, double lat) {
+
+
+    }
+
+    private void sendBroadCastToServer(String broadcast) {
+
+
+    }
+
+
+
+    //---------------------------------
     @Override
-    public void onFocusChange(View v, boolean hasFocus) {
-        switch (v.getId()) {
-            case R.id.et_main_broad:
-                Log.i("lala", "is focus : " + hasFocus);
-                if (isLogin()) {
-
-                } else {
-                    startLoginActivity();
-                }
-                break;
-        }
+    public void getLastKnownLocation(Location location) {
+        Logger.d(location);
     }
 
-    private void connectToServer() {
-        AsyncServer.getDefault().connectSocket(new InetSocketAddress(Const.ip(), Const.socketPort()), new ConnectCallback() {
-            @Override
-            public void onConnectCompleted(Exception ex, AsyncSocket socket) {
-                if (ex == null) {
-                    asyncSocket = socket;
-                    asyncSocket.write(new ByteBufferList(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()).getBytes()));
-                    asyncSocket.setWriteableCallback(new WritableCallback() {
-                        @Override
-                        public void onWriteable() {
-                            Log.i("lala", "onWriteable");
-                        }
-                    });
-                    asyncSocket.setDataCallback(new DataCallback() {
-                        @Override
-                        public void onDataAvailable(DataEmitter emitter, ByteBufferList bb) {
-                            String msg = new String(bb.getAllByteArray());
-                            Log.i("lala", "setDataCallback : " + msg + " " + Thread.currentThread().getName());
-                            addMsg(msg);
-                        }
-                    });
-                    asyncSocket.setClosedCallback(new CompletedCallback() {
-                        @Override
-                        public void onCompleted(Exception ex) {
-                            Log.i("lala", "setClosedCallback : " + ex.getMessage());
-                        }
-                    });
-                    asyncSocket.setEndCallback(new CompletedCallback() {
-                        @Override
-                        public void onCompleted(Exception ex) {
-                            Log.i("lala", "setEndCallback : " + ex.getMessage());
-                        }
-                    });
-                }
-            }
-        });
+    @Override
+    public void onLocationChanged(Location location) {
+        Logger.d(location);
+        this.location = location;
     }
 
-    private void sendBroadMsg(String msg) {
-        asyncSocket.write(new ByteBufferList(msg.getBytes()));
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        Logger.d(status);
     }
 
-    private void addMsg(final String msg) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TextView textView = new TextView(MainActivity.this);
-                textView.setTextColor(getResources().getColor(R.color.txtblack));
-                textView.setText(msg);
-                //llBroadMsg.addView(textView);
 
-            }
-        });
-    }
 }

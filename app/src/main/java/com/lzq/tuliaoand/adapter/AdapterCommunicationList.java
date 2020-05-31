@@ -11,28 +11,25 @@ import android.widget.TextView;
 import com.blankj.utilcode.util.StringUtils;
 import com.bumptech.glide.Glide;
 import com.lzq.tuliaoand.R;
-import com.lzq.tuliaoand.bean.BeanCommunication;
 
 import java.util.List;
 
 public class AdapterCommunicationList extends BaseAdapter {
 
     private Context context;
-    private List<BeanCommunication> communications;
 
-    public AdapterCommunicationList(Context context, List<BeanCommunication> communications) {
+    public AdapterCommunicationList(Context context) {
         this.context = context;
-        this.communications = communications;
     }
 
     @Override
     public int getCount() {
-        return communications.size();
+        return 10;
     }
 
     @Override
     public Object getItem(int position) {
-        return communications.get(position);
+        return null;
     }
 
     @Override
@@ -55,19 +52,6 @@ public class AdapterCommunicationList extends BaseAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        BeanCommunication beanCommunication = communications.get(position);
-        if (!StringUtils.isEmpty(beanCommunication.getUrlAvatar())) {
-            Glide.with(context).load(beanCommunication.getUrlAvatar()).into(viewHolder.ivAvatar);
-        }
-        viewHolder.tvMsgNewest.setText(beanCommunication.getMsgNewest());
-        viewHolder.tvTimeNewestMsg.setText(beanCommunication.getTimeStringNewestMsg());
-        long sizeUncheckMsg = beanCommunication.getSizeUncheckMsg();
-        if (sizeUncheckMsg > 0) {
-            viewHolder.tvSizeUncheckMsg.setVisibility(View.VISIBLE);
-            viewHolder.tvSizeUncheckMsg.setText(Long.toString(sizeUncheckMsg));
-        } else {
-            viewHolder.tvSizeUncheckMsg.setVisibility(View.GONE);
-        }
 
 
         return convertView;

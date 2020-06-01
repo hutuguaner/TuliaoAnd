@@ -38,6 +38,8 @@
 
     </RelativeLayout>
 
+
+
     <ListView
         android:id="@+id/lv_conversation_msgs"
         android:layout_width="match_parent"

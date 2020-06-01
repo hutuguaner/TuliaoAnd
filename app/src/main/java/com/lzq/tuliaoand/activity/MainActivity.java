@@ -81,6 +81,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mainPresenter = new MainPresenter(this);
+
         initPermission();
         setContentView(R.layout.activity_main);
         initView();
@@ -98,8 +100,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             return;
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
-
-        mainPresenter = new MainPresenter(this);
 
 
     }

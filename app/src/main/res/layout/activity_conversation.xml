@@ -38,16 +38,11 @@
 
     </RelativeLayout>
 
-
-
-    <ListView
-        android:id="@+id/lv_conversation_msgs"
+    <com.stfalcon.chatkit.messages.MessagesList
+        android:id="@+id/ml_conversation"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:background="@android:color/white"
-        android:divider="@android:color/white"
-        android:dividerHeight="@dimen/dp_20" />
+        android:layout_weight="1" />
 
     <RelativeLayout
         android:layout_width="match_parent"

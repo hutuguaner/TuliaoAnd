@@ -25,8 +25,8 @@ public class ConversationPresenter {
     public void sendMessage(Message message) {
         JSONObject params = new JSONObject();
         try {
-            params.put("from", message.getEmailFrom());
-            params.put("to", message.getEmailTo());
+            params.put("from", message.getFrom().getEmail());
+            params.put("to", message.getTo().getEmail());
             params.put("content", message.getContent());
         } catch (JSONException e) {
             e.printStackTrace();

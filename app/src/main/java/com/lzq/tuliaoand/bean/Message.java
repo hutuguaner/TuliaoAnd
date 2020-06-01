@@ -5,13 +5,16 @@ import android.os.Parcelable;
 
 import androidx.annotation.Nullable;
 
+import com.stfalcon.chatkit.commons.models.IMessage;
+import com.stfalcon.chatkit.commons.models.IUser;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class Message implements Parcelable {
+public class Message implements Parcelable, IMessage {
 
-    private String emailFrom;
-    private String emailTo;
+    private User from;
+    private User to;
     private String content;
     private long timeStamp;
 
@@ -19,8 +22,8 @@ public class Message implements Parcelable {
     }
 
     protected Message(Parcel in) {
-        emailFrom = in.readString();
-        emailTo = in.readString();
+        from = in.readParcelable(User.class.getClassLoader());
+        to = in.readParcelable(User.class.getClassLoader());
         content = in.readString();
         timeStamp = in.readLong();
     }
@@ -37,20 +40,21 @@ public class Message implements Parcelable {
         }
     };
 
-    public String getEmailFrom() {
-        return emailFrom;
+
+    public User getFrom() {
+        return from;
     }
 
-    public void setEmailFrom(String emailFrom) {
-        this.emailFrom = emailFrom;
+    public void setFrom(User from) {
+        this.from = from;
     }
 
-    public String getEmailTo() {
-        return emailTo;
+    public User getTo() {
+        return to;
     }
 
-    public void setEmailTo(String emailTo) {
-        this.emailTo = emailTo;
+    public void setTo(User to) {
+        this.to = to;
     }
 
     public String getContent() {
@@ -77,7 +81,16 @@ public class Message implements Parcelable {
     @Override
     public boolean equals(@Nullable Object obj) {
         Message compare = (Message) obj;
-        return ((emailFrom.equals(compare.getEmailFrom())) && (emailTo.equals(compare.emailTo)) && (content.equals(compare.getContent())) && (timeStamp == compare.getTimeStamp()));
+        if (content.equals(compare.content)) {
+            if (from.equals(compare.getFrom())) {
+                if (to.equals(compare.to)) {
+                    if (timeStamp == compare.getTimeStamp()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -87,9 +100,31 @@ public class Message implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(emailFrom);
-        dest.writeString(emailTo);
+        dest.writeParcelable(from,0);
+        dest.writeParcelable(to,0);
         dest.writeString(content);
         dest.writeLong(timeStamp);
+    }
+
+    @Override
+    public String getId() {
+        return from.getId() + content + to.getId() + timeStamp;
+    }
+
+    @Override
+    public String getText() {
+        return content;
+    }
+
+    @Override
+    public IUser getUser() {
+
+
+        return from;
+    }
+
+    @Override
+    public Date getCreatedAt() {
+        return new Date();
     }
 }

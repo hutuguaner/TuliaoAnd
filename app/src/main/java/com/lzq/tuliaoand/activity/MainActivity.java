@@ -35,6 +35,8 @@ import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.bean.User;
 import com.lzq.tuliaoand.common.Const;
 import com.lzq.tuliaoand.common.SPKey;
+import com.lzq.tuliaoand.model.MainModel;
+import com.lzq.tuliaoand.presenter.MainPresenter;
 import com.orhanobut.logger.Logger;
 
 import org.json.JSONArray;
@@ -53,10 +55,12 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener ,com.lzq.tuliaoand.subutil.util.LocationUtils.OnLocationChangeListener {
+public class MainActivity extends BaseActivity implements View.OnClickListener, com.lzq.tuliaoand.subutil.util.LocationUtils.OnLocationChangeListener, MainModel, Marker.OnMarkerClickListener {
 
     private MapView mapView;
     private MapController mapController;
@@ -65,6 +69,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener ,
 
     private volatile List<User> users;
     private Location location;
+
+    private MainPresenter mainPresenter;
+
+    private TimerTask timerTask;
+
+    private Timer timer;
+
+    private ArrayList<Conversation> conversations;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,132 +99,111 @@ public class MainActivity extends BaseActivity implements View.OnClickListener ,
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
 
+        mainPresenter = new MainPresenter(this);
+
+
     }
 
 
+    private void resumeTask() {
 
+        if (timerTask == null)
+            timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    //
+                    if (location != null) {
+                        mainPresenter.uploadPosition(location.getLongitude(), location.getLatitude());
+                    }
 
+                    //
+                    try {
+                        Thread.sleep(1000 * 2);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
-    private void receiveUserQuit(String data) {
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(data);
-            if (users == null) users = new ArrayList<>();
-            String email = jsonObject.getString("email");
-            User user = new User();
-            user.setEmail(email);
-            if (users.contains(user)) {
-                users.remove(user);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
+                    //
+                    mainPresenter.getUsers();
 
+                    //
+                    try {
+                        Thread.sleep(1000 * 2);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
-    private void receiveMessages(String data) {
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(data);
-            if (users == null) users = new ArrayList<>();
-            String from = jsonObject.getString("from");
-            String content = jsonObject.getString("content");
-            long time = jsonObject.getLong("time");
-            Message message = new Message();
-            message.setEmailFrom(from);
-            message.setContent(content);
-            message.setTimeStamp(time);
+                    //
+                    mainPresenter.getMsgs();
 
-            User user = new User();
-            user.setEmail(from);
-
-            if (users.contains(user)) {
-                int index = users.indexOf(user);
-                Conversation conversation = new Conversation();
-                conversation.setOppositeEmail(from);
-                if (users.get(index).getConversations().contains(conversation)) {
-                    int indexConversation = users.get(index).getConversations().indexOf(conversation);
-                    users.get(index).getConversations().get(indexConversation).getMessages().add(message);
-                } else {
-                    users.get(index).getConversations().add(conversation);
                 }
+            };
+        if (timer == null) timer = new Timer();
 
+        timer.schedule(timerTask, 1000, 1000 * 5);
+    }
+
+
+    private void pauseTask() {
+        if (timerTask != null) {
+            timerTask.cancel();
+            timerTask = null;
+        }
+        if (timer != null) timer.purge();
+    }
+
+
+    private void receiveMessages(List<Message> messages) {
+        if (conversations == null) conversations = new ArrayList<>();
+        for (int i = 0; i < messages.size(); i++) {
+            Message message = messages.get(i);
+            Conversation conversation = new Conversation();
+            conversation.setOppositeEmail(message.getEmailFrom());
+
+            if (conversations.contains(conversation)) {
+                int index = conversations.indexOf(conversation);
+                conversations.get(index).getMessages().add(message);
             } else {
-                List<Conversation> conversations = new ArrayList<>();
-                Conversation conversation = new Conversation();
-                conversation.setOppositeEmail(from);
-                conversation.setMessages(Arrays.asList(message));
-                user.setConversations(conversations);
-                users.add(user);
+                ArrayList<Message> msgs = new ArrayList<>();
+                msgs.add(message);
+                conversation.setMessages(msgs);
+                conversations.add(conversation);
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
+
         }
     }
 
-    private void receivePositions(String data) {
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(data);
-            if (users == null) users = new ArrayList<>();
-            String email = jsonObject.getString("email");
-            double lng = jsonObject.getDouble("lng");
-            double lat = jsonObject.getDouble("lat");
-            User user = new User();
-            user.setEmail(email);
 
-            if (email.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
-                locateMarker.setPosition(new GeoPoint(lat, lng));
-                mapView.invalidate();
-                return;
-            }
-
-            if (users.contains(user)) {
-                int index = users.indexOf(user);
-                users.get(index).setLat(lat);
-                users.get(index).setLng(lng);
-                users.get(index).getMarker().setPosition(new GeoPoint(lat, lng));
+    private void updataBroadcastAndPostion(List<User> users) {
+        if (this.users == null) this.users = new ArrayList<>();
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            if (this.users.contains(user)) {
+                int index = this.users.indexOf(user);
+                this.users.get(index).setBroadcast(user.getBroadcast());
+                this.users.get(index).getMarker().setTitle(user.getBroadcast());
+                this.users.get(index).getMarker().showInfoWindow();
                 mapView.invalidate();
             } else {
-                user.setLng(lng);
-                user.setLat(lat);
                 Marker marker = new Marker(mapView);
-                marker.setPosition(new GeoPoint(lat, lng));
-                marker.setIcon(getResources().getDrawable(R.mipmap.ic_postion_curr));
+                if (user.getEmail().equals(getCurrLoginEmail())) {
+                    marker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
+                } else {
+                    marker.setIcon(getResources().getDrawable(R.mipmap.ic_postion_curr));
+                }
+                marker.setTitle(user.getBroadcast());
+                marker.setId(user.getEmail());
+                marker.setOnMarkerClickListener(this);
                 mapView.getOverlayManager().add(marker);
                 mapView.invalidate();
                 user.setMarker(marker);
-                users.add(user);
+                this.users.add(user);
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
         }
     }
 
-
-    private void receiveBroadcasts(String data) {
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(data);
-            if (users == null) users = new ArrayList<>();
-            String email = jsonObject.getString("email");
-            String content = jsonObject.getString("broadcast");
-            User user = new User();
-            user.setEmail(email);
-            user.setBroadcast(content);
-            if (users.contains(user)) {
-                int index = users.indexOf(user);
-                users.get(index).setBroadcast(content);
-                users.get(index).getMarker().setTitle(content);
-                users.get(index).getMarker().showInfoWindow();
-                mapView.invalidate();
-            } else {
-                users.add(user);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
+    private String getCurrLoginEmail() {
+        return SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName());
     }
 
 
@@ -220,12 +211,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener ,
     protected void onResume() {
         super.onResume();
         mapView.onResume();
+        resumeTask();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mapView.onPause();
+        pauseTask();
     }
 
     @Override
@@ -411,7 +404,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener ,
                         return;
                     }
 
-                    sendBroadCastToServer(broadMsg);
+                    mainPresenter.uploadBroadCast(broadMsg);
                 }
                 break;
         }
@@ -424,8 +417,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener ,
     }
 
     private void startMsgListActivity() {
-        Intent msgListIntent = new Intent(this, CommunicationListActivity.class);
-        startActivity(msgListIntent);
+        if (conversations == null) conversations = new ArrayList<>();
+        Intent conversationListIntent = new Intent(this, CommunicationListActivity.class);
+        conversationListIntent.putExtra("data", conversations);
+        startActivity(conversationListIntent);
     }
 
 
@@ -440,23 +435,129 @@ public class MainActivity extends BaseActivity implements View.OnClickListener ,
     }
 
 
-
     //---------------------------------
     @Override
     public void getLastKnownLocation(Location location) {
-        Logger.d(location);
+
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        Logger.d(location);
         this.location = location;
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        Logger.d(status);
     }
 
 
+    //--------------------------------
+    @Override
+    public void getUsersStart() {
+
+    }
+
+    @Override
+    public void getUsersError(String err) {
+
+    }
+
+    @Override
+    public void getUsersSuccess(List<User> users) {
+        updataBroadcastAndPostion(users);
+
+
+    }
+
+    @Override
+    public void getUsersFinish() {
+
+    }
+
+    @Override
+    public void getMsgsStart() {
+
+    }
+
+    @Override
+    public void getMsgsError(String msg) {
+
+    }
+
+    @Override
+    public void getMsgsSuccess(List<Message> messages) {
+        receiveMessages(messages);
+    }
+
+    @Override
+    public void getMsgsFinish() {
+
+    }
+
+    @Override
+    public void uploadPositionStart() {
+
+    }
+
+    @Override
+    public void uploadPositionError(String msg) {
+
+    }
+
+    @Override
+    public void uploadPositionSuccess() {
+
+    }
+
+    @Override
+    public void uploadPositionFinish() {
+
+    }
+
+    @Override
+    public void uploadBroadcastStart() {
+
+    }
+
+    @Override
+    public void uploadBroadcastError(String msg) {
+
+    }
+
+    @Override
+    public void uploadBroadcastSuccess() {
+
+    }
+
+    @Override
+    public void uploadBroadcastFinish() {
+
+    }
+
+    @Override
+    public void uploadMsgStart() {
+
+    }
+
+    @Override
+    public void uploadMsgError(String msg) {
+
+    }
+
+    @Override
+    public void uploadMsgSuccess() {
+
+    }
+
+    @Override
+    public void uploadMsgFinish() {
+
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker, MapView mapView) {
+        String email = marker.getId();
+
+        return false;
+    }
 }

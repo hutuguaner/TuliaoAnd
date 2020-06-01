@@ -11,6 +11,8 @@ import android.widget.TextView;
 import com.blankj.utilcode.util.StringUtils;
 import com.bumptech.glide.Glide;
 import com.lzq.tuliaoand.R;
+import com.lzq.tuliaoand.bean.Conversation;
+import com.lzq.tuliaoand.bean.Message;
 
 import java.util.List;
 
@@ -18,18 +20,21 @@ public class AdapterCommunicationList extends BaseAdapter {
 
     private Context context;
 
-    public AdapterCommunicationList(Context context) {
+    private List<Conversation> conversations;
+
+    public AdapterCommunicationList(Context context, List<Conversation> conversations) {
         this.context = context;
+        this.conversations = conversations;
     }
 
     @Override
     public int getCount() {
-        return 10;
+        return conversations.size();
     }
 
     @Override
     public Object getItem(int position) {
-        return null;
+        return conversations.get(position);
     }
 
     @Override
@@ -52,7 +57,13 @@ public class AdapterCommunicationList extends BaseAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
+        Conversation conversation = (Conversation) getItem(position);
 
+        List<Message> messages = conversation.getMessages();
+
+        viewHolder.tvMsgNewest.setText(messages.get(messages.size()-1).getContent());
+        viewHolder.tvTimeNewestMsg.setText(messages.get(messages.size()-1).getTimeStringMsg());
+        viewHolder.tvSizeUncheckMsg.setText(Integer.toString(messages.size()));
 
         return convertView;
     }

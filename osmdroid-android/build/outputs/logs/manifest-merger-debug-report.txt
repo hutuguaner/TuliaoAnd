@@ -1,0 +1,51 @@
+-- Merging decision tree log ---
+manifest
+ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:2:1-12:12
+INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:2:1-12:12
+INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:2:1-12:12
+	package
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:3:3-33
+		INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml
+		INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:2:11-69
+supports-screens
+ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:2-105
+	android:largeScreens
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:20-47
+	android:normalScreens
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:48-76
+	android:anyDensity
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:77-102
+uses-feature#android.hardware.location.network
+ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:6:2-92
+	android:required
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:6:65-89
+	android:name
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:6:16-64
+uses-feature#android.hardware.location.gps
+ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:7:2-88
+	android:required
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:7:61-85
+	android:name
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:7:16-60
+uses-feature#android.hardware.telephony
+ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:8:2-85
+	android:required
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:8:58-82
+	android:name
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:8:16-57
+uses-feature#android.hardware.wifi
+ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:9:2-80
+	android:required
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:9:53-77
+	android:name
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:9:16-52
+uses-sdk
+INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml
+INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml
+		ADDED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml
+		INJECTED from D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml

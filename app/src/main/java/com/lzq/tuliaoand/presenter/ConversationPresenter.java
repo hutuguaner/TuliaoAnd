@@ -52,9 +52,11 @@ public class ConversationPresenter {
                     int code = result.getInt("code");
                     if (code == 0) {
                         conversationModel.sendMsgSuccess();
-                    } else {
+                    } else if (code == 1) {
                         String msg = result.getString("message");
                         conversationModel.sendMsgError(msg);
+                    } else if (code == 2) {
+                        conversationModel.connectTimeOut();
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();

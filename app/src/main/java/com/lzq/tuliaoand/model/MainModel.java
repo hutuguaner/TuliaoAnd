@@ -7,6 +7,11 @@ import java.util.List;
 
 public interface MainModel {
 
+
+    void connectTimeOut();
+
+    //
+
     void getUsersStart();
 
     void getUsersError(String err);
@@ -43,9 +48,5 @@ public interface MainModel {
 
     void uploadBroadcastFinish();
 
-    //
-    void uploadMsgStart();
-    void uploadMsgError(String msg);
-    void uploadMsgSuccess();
-    void uploadMsgFinish();
+
 }

@@ -11,8 +11,17 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/OSMMapTilePackager" />
+            <option value="$PROJECT_DIR$/OpenStreetMapViewer" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/chatkit" />
+            <option value="$PROJECT_DIR$/osmdroid-android" />
+            <option value="$PROJECT_DIR$/osmdroid-dist" />
+            <option value="$PROJECT_DIR$/osmdroid-geopackage" />
+            <option value="$PROJECT_DIR$/osmdroid-mapsforge" />
+            <option value="$PROJECT_DIR$/osmdroid-server-jdk" />
+            <option value="$PROJECT_DIR$/osmdroid-simple-map" />
+            <option value="$PROJECT_DIR$/osmdroid-wms" />
             <option value="$PROJECT_DIR$/sweet-alert-dialog" />
           </set>
         </option>

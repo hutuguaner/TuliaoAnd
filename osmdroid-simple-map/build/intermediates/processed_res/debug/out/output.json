@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "applicationId": "org.osmdroid.sample",
+  "variantType": "BASE_APK",
+  "elements": [
+    {
+      "outputType": {
+        "type": "PROCESSED_RES"
+      },
+      "apkData": {
+        "type": "MAIN",
+        "splits": [],
+        "versionCode": -1,
+        "outputFile": "osmdroid-simple-map-debug.apk",
+        "fullName": "debug",
+        "baseName": "debug",
+        "dirName": ""
+      },
+      "path": "resources-debug.ap_",
+      "properties": {
+        "packageId": "org.osmdroid.sample",
+        "split": "",
+        "minSdkVersion": "1"
+      }
+    }
+  ]
+}

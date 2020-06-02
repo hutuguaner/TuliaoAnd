@@ -1,0 +1,42 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="org.osmdroid.library" >
+4
+5    <uses-sdk android:minSdkVersion="1" />
+5-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml
+6
+7    <supports-screens
+7-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:2-105
+8        android:anyDensity="true"
+8-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:77-102
+9        android:largeScreens="true"
+9-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:20-47
+10        android:normalScreens="true" />
+10-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:4:48-76
+11
+12    <uses-feature
+12-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:6:2-92
+13        android:name="android.hardware.location.network"
+13-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:6:16-64
+14        android:required="false" />
+14-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:6:65-89
+15    <uses-feature
+15-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:7:2-88
+16        android:name="android.hardware.location.gps"
+16-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:7:16-60
+17        android:required="false" />
+17-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:7:61-85
+18    <uses-feature
+18-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:8:2-85
+19        android:name="android.hardware.telephony"
+19-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:8:16-57
+20        android:required="false" />
+20-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:8:58-82
+21    <uses-feature
+21-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:9:2-80
+22        android:name="android.hardware.wifi"
+22-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:9:16-52
+23        android:required="false" />
+23-->D:\AndroidStudioProjects\TuliaoAnd\osmdroid-android\src\main\AndroidManifest.xml:9:53-77
+24
+25</manifest>

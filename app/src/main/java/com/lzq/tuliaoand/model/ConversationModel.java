@@ -6,6 +6,10 @@ import java.util.List;
 
 public interface ConversationModel {
 
+    void connectTimeOut();
+
+    //
+
     void sendMsgStart();
     void sendMsgError(String msg);
     void sendMsgSuccess();

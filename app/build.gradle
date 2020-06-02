@@ -31,8 +31,6 @@ dependencies {
 
     implementation 'com.github.lzyzsd:jsbridge:1.0.4'
     //
-    implementation 'org.osmdroid:osmdroid-android:6.1.6'
-    //
     implementation 'pub.devrel:easypermissions:3.0.0'
     //
     implementation project(path: ':sweet-alert-dialog')
@@ -52,5 +50,9 @@ dependencies {
     //
     implementation 'com.daimajia.easing:library:2.0@aar'
     implementation 'com.daimajia.androidanimations:library:2.3@aar'
+    //
+    implementation project(path:':osmdroid-android')
+    // https://github.com/pranavpandey/dynamic-utils
+    implementation 'com.pranavpandey.android:dynamic-utils:3.2.1'
 
 }

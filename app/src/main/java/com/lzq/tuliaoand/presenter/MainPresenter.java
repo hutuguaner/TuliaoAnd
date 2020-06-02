@@ -34,41 +34,6 @@ public class MainPresenter {
     }
 
 
-    public void uploadMsg(String to, String content) {
-        String email = SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName());
-        JSONObject params = new JSONObject();
-        try {
-            params.put("from", email);
-            params.put("content", content);
-            params.put("to", to);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        OkGo.<String>post(Const.UPLOAD_MSG).upJson(params).execute(new StringCallback() {
-            @Override
-            public void onStart(Request<String, ? extends Request> request) {
-                super.onStart(request);
-                mainModel.uploadMsgStart();
-            }
-
-            @Override
-            public void onError(Response<String> response) {
-                super.onError(response);
-                mainModel.uploadMsgError(response.body());
-            }
-
-            @Override
-            public void onSuccess(Response<String> response) {
-            }
-
-            @Override
-            public void onFinish() {
-                super.onFinish();
-                mainModel.uploadMsgFinish();
-            }
-        });
-    }
-
     public void uploadBroadCast(String broadcast) {
         String email = SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName());
         JSONObject params = new JSONObject();
@@ -98,9 +63,12 @@ public class MainPresenter {
                     int code = result.getInt("code");
                     if (code == 0) {
                         mainModel.uploadBroadcastSuccess();
-                    } else {
+                    } else if (code == 1) {
                         String msg = result.getString("message");
                         mainModel.uploadBroadcastError(msg);
+                    } else if (code == 2) {
+                        //连接超时 重新登录
+                        mainModel.connectTimeOut();
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -147,9 +115,12 @@ public class MainPresenter {
                     int code = result.getInt("code");
                     if (code == 0) {
                         mainModel.uploadPositionSuccess();
-                    } else {
+                    } else if (code == 1) {
                         String msg = result.getString("message");
                         mainModel.uploadPositionError(msg);
+                    } else if (code == 2) {
+                        //连接超时 重新登录
+                        mainModel.connectTimeOut();
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -214,9 +185,11 @@ public class MainPresenter {
                             messages.add(message);
                         }
                         mainModel.getMsgsSuccess(messages);
-                    } else {
+                    } else if (code==1){
                         String msg = result.getString("message");
                         mainModel.getMsgsError(msg);
+                    }else if (code==2){
+                        mainModel.connectTimeOut();
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -273,9 +246,11 @@ public class MainPresenter {
                             users.add(user);
                         }
                         mainModel.getUsersSuccess(users);
-                    } else {
+                    } else if (code==1){
                         String msg = result.getString("message");
                         mainModel.getUsersError(msg);
+                    }else if (code==2){
+                        mainModel.connectTimeOut();
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();

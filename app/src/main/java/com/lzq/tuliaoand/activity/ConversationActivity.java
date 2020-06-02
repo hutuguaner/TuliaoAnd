@@ -1,5 +1,6 @@
 package com.lzq.tuliaoand.activity;
 
+import android.content.Intent;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.view.View;
@@ -13,8 +14,10 @@ import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
 import com.bumptech.glide.Glide;
+import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
 import com.lzq.tuliaoand.bean.Message;
+import com.lzq.tuliaoand.common.SPKey;
 import com.lzq.tuliaoand.model.ConversationModel;
 import com.lzq.tuliaoand.presenter.ConversationPresenter;
 import com.stfalcon.chatkit.commons.ImageLoader;
@@ -106,6 +109,14 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
         }
     }
 
+
+
+    @Override
+    public void connectTimeOut() {
+        ToastUtils.showLong("连接断开，请重新登录");
+        SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(),"");
+        startActivity(new Intent(this, LoginActivity.class));
+    }
 
     @Override
     public void sendMsgStart() {

@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "D:\\AndroidStudioProjects\\TuliaoAnd\\osmdroid-simple-map\\build\\intermediates\\res\\merged\\debug\\drawable_icon.png.flat",
+        "source": "D:\\AndroidStudioProjects\\TuliaoAnd\\osmdroid-simple-map\\src\\main\\res\\drawable\\icon.png"
+    },
+    {
+        "merged": "D:\\AndroidStudioProjects\\TuliaoAnd\\osmdroid-simple-map\\build\\intermediates\\res\\merged\\debug\\layout_activity_main.xml.flat",
+        "source": "D:\\AndroidStudioProjects\\TuliaoAnd\\osmdroid-simple-map\\src\\main\\res\\layout\\activity_main.xml"
+    }
+]

@@ -1,0 +1,15 @@
+description = 'An Android library to display OpenStreetMap views.'
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 29
+    lintOptions {
+        abortOnError false
+    }
+}
+
+dependencies {
+
+    // https://github.com/pranavpandey/dynamic-utils
+    implementation 'com.pranavpandey.android:dynamic-utils:3.2.1'
+}

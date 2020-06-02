@@ -1,0 +1,27 @@
+description = 'Simple Map'
+
+apply plugin: 'com.android.application'
+
+// Attention! HACK!
+// In https://raw.githubusercontent.com/gradle-fury/gradle-fury/v1.1.4/gradle/android-support.gradle
+// we have a hack to prevent builds from failing due to missing signing config. This is done by
+// removing the signing task from the build if no keystore/pass is provided.
+//
+// At some point the signing task has been renamed from "validateReleaseSigning" to
+// "validateSigningRelease", thus obviously breaking the build again.
+//
+// The following is just a copy of the relevant code from android-support.gradle adapted to the new
+// name. This should be cleaned up in the future!
+
+android {
+    compileSdkVersion 29
+    defaultConfig {
+        applicationId 'org.osmdroid.sample'
+    }
+}
+
+dependencies {
+    compile project(':osmdroid-android')
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+
+}

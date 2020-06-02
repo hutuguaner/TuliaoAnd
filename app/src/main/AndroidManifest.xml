@@ -46,10 +46,12 @@
         <activity android:name=".activity.UserDetailActivity" />
         <activity android:name=".activity.BroadCastDetailActivity" />
         <activity android:name=".activity.BaseActivity" />
-        <activity android:name=".activity.MainActivity" />
+        <activity
+            android:name=".LoginActivity"
+            android:launchMode="singleTop" />
         <activity android:name=".activity.ResetPwdActivity" />
         <activity android:name=".activity.RegistActivity" />
-        <activity android:name=".LoginActivity">
+        <activity android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

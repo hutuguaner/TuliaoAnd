@@ -19,8 +19,4 @@
     <color name="material_blue_grey_95">#ff21272b</color>
     <color name="material_deep_teal_20">#ff80cbc4</color>
     <color name="material_deep_teal_50">#ff009688</color>
-    <color name="blue">#2D75E0</color>
-    <color name="blue_text">#1087E3</color>
-    <color name="red_text">#FE3B30</color>
-    <color name="orange">#F5A623</color>
 </resources>

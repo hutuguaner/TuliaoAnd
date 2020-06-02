@@ -45,5 +45,12 @@ dependencies {
     implementation 'com.orhanobut:logger:2.2.0'
     //
     implementation 'com.google.code.gson:gson:2.8.6'
+    //
+    implementation project(path:':chatkit')
+    //
+    implementation "com.android.support:design:27.1.1"
+    //
+    implementation 'com.daimajia.easing:library:2.0@aar'
+    implementation 'com.daimajia.androidanimations:library:2.3@aar'
 
 }

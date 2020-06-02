@@ -27,6 +27,8 @@ import android.widget.Toast;
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
+import com.daimajia.androidanimations.library.Techniques;
+import com.daimajia.androidanimations.library.YoYo;
 import com.lzq.tuliaoand.App;
 import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
@@ -54,7 +56,11 @@ import org.w3c.dom.Text;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -67,7 +73,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     private ImageView ivLocate, ivSend, ivMessage;
     private EditText etBroadcast;
 
-    private volatile List<User> users;
     private Location location;
 
     private MainPresenter mainPresenter;
@@ -78,9 +83,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     private ArrayList<Conversation> conversations;
 
+    private YoYo.YoYoString yoYoString;
+
+    private Map<String, Marker> markerMap;
+
+    private Queue<User> userQueue;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mainPresenter = new MainPresenter(this);
+
         initPermission();
         setContentView(R.layout.activity_main);
         initView();
@@ -98,8 +112,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             return;
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
-
-        mainPresenter = new MainPresenter(this);
 
 
     }
@@ -134,6 +146,53 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     }
 
                     //
+                    while (!userQueue.isEmpty()) {
+                        final User user = userQueue.poll();
+                        if (markerMap == null) markerMap = new HashMap<>();
+                        if (markerMap.containsKey(user.getEmail())) {
+                            markerMap.get(user.getEmail()).setTitle(user.getBroadcast());
+
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!StringUtils.isTrimEmpty(markerMap.get(user.getEmail()).getTitle())){
+                                        markerMap.get(user.getEmail()).showInfoWindow();
+                                    }
+                                    markerMap.get(user.getEmail()).setPosition(new GeoPoint(user.getLat(), user.getLng()));
+                                    mapView.invalidate();
+                                }
+                            });
+
+                        } else {
+                            final Marker marker = new Marker(mapView);
+                            if (user.getEmail().equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
+                                marker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
+                            } else {
+                                marker.setIcon(getResources().getDrawable(R.mipmap.ic_postion_curr));
+                            }
+                            marker.setPosition(new GeoPoint(user.getLat(), user.getLng()));
+                            marker.setTitle(user.getBroadcast());
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!StringUtils.isTrimEmpty(marker.getTitle())){
+                                        marker.showInfoWindow();
+                                    }
+                                }
+                            });
+                            mapView.getOverlayManager().add(marker);
+                            mapView.postInvalidate();
+                            markerMap.put(user.getEmail(), marker);
+                        }
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    //
                     mainPresenter.getMsgs();
 
                 }
@@ -158,7 +217,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         for (int i = 0; i < messages.size(); i++) {
             Message message = messages.get(i);
             Conversation conversation = new Conversation();
-            conversation.setOppositeEmail(message.getEmailFrom());
 
             if (conversations.contains(conversation)) {
                 int index = conversations.indexOf(conversation);
@@ -175,30 +233,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
 
     private void updataBroadcastAndPostion(List<User> users) {
-        if (this.users == null) this.users = new ArrayList<>();
+        if (userQueue == null) userQueue = new LinkedList<>();
         for (int i = 0; i < users.size(); i++) {
             User user = users.get(i);
-            if (this.users.contains(user)) {
-                int index = this.users.indexOf(user);
-                this.users.get(index).setBroadcast(user.getBroadcast());
-                this.users.get(index).getMarker().setTitle(user.getBroadcast());
-                this.users.get(index).getMarker().showInfoWindow();
-                mapView.invalidate();
-            } else {
-                Marker marker = new Marker(mapView);
-                if (user.getEmail().equals(getCurrLoginEmail())) {
-                    marker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
-                } else {
-                    marker.setIcon(getResources().getDrawable(R.mipmap.ic_postion_curr));
-                }
-                marker.setTitle(user.getBroadcast());
-                marker.setId(user.getEmail());
-                marker.setOnMarkerClickListener(this);
-                mapView.getOverlayManager().add(marker);
-                mapView.invalidate();
-                user.setMarker(marker);
-                this.users.add(user);
-            }
+            userQueue.offer(user);
         }
     }
 
@@ -358,24 +396,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         mapController.animateTo(point);
     }
 
-    //显示定位标志
-    private Marker locateMarker;
-    private boolean hasAddLocateMarker = false;
-
     private void showLocateMarker(GeoPoint geoPoint) {
-        if (locateMarker == null) {
-            locateMarker = new Marker(mapView);
-        }
-        if (hasAddLocateMarker) {
-            locateMarker.setPosition(geoPoint);
+        if (markerMap == null) markerMap = new HashMap<>();
+        if (markerMap.containsKey(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
+            markerMap.get(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName())).setPosition(geoPoint);
             mapView.invalidate();
         } else {
-            locateMarker.setPosition(geoPoint);
-            locateMarker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
-
-            mapView.getOverlayManager().add(locateMarker);
-            hasAddLocateMarker = true;
+            Marker marker = new Marker(mapView);
+            marker.setPosition(geoPoint);
+            marker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
+            mapView.getOverlayManager().add(marker);
+            mapView.invalidate();
+            markerMap.put(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()), marker);
         }
+
     }
 
 
@@ -395,6 +429,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 break;
             case R.id.iv_main_twobubble:
                 startMsgListActivity();
+
+                if (yoYoString != null && yoYoString.isRunning()) {
+                    yoYoString.stop();
+                    yoYoString = null;
+                }
                 break;
             case R.id.iv_main_paperairplane:
                 String broadMsg = etBroadcast.getText().toString();
@@ -464,6 +503,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     @Override
     public void getUsersSuccess(List<User> users) {
+        if (users == null || users.size() < 1) return;
         updataBroadcastAndPostion(users);
 
 
@@ -486,7 +526,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     @Override
     public void getMsgsSuccess(List<Message> messages) {
+        if (messages == null || messages.size() < 1) return;
         receiveMessages(messages);
+
+        if (yoYoString == null) {
+            yoYoString = YoYo.with(Techniques.Tada)
+                    .duration(700)
+                    .repeat(YoYo.INFINITE)
+                    .playOn(ivMessage);
+        } else {
+
+        }
+
     }
 
     @Override

@@ -202,9 +202,13 @@ public class MainPresenter {
                             String content = item.getString("content");
                             String time = item.getString("time");
                             Message message = new Message();
-                            message.setEmailFrom(from);
+                            User userFrom = new User();
+                            userFrom.setEmail(from);
+                            User userTo = new User();
+                            userTo.setEmail(to);
+                            message.setFrom(userFrom);
                             message.setContent(content);
-                            message.setEmailTo(to);
+                            message.setTo(userTo);
                             if (!StringUtils.isTrimEmpty(time))
                                 message.setTimeStamp(Long.parseLong(time));
                             messages.add(message);

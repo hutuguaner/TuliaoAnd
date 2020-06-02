@@ -1,2 +1,3 @@
+include ':chatkit'
 include ':app', ':sweet-alert-dialog'
 rootProject.name='TuliaoAnd'

@@ -1,13 +1,12 @@
 apply plugin: 'com.android.library'
 
 
-
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
 
     defaultConfig {
-        minSdkVersion 14
+        minSdkVersion 9
     }
 
     lintOptions {
@@ -18,5 +17,3 @@ android {
 dependencies {
     implementation 'com.pnikosis:materialish-progress:1.0'
 }
-
-//apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'

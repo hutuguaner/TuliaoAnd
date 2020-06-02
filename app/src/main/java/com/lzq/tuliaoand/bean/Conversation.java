@@ -10,16 +10,16 @@ import java.util.List;
 
 public class Conversation implements Parcelable {
 
-    private User from;
-    private User to;
+    private User opposite;
+    private User me;
     private ArrayList<Message> messages;
 
     public Conversation() {
     }
 
     protected Conversation(Parcel in) {
-        from = in.readParcelable(User.class.getClassLoader());
-        to = in.readParcelable(User.class.getClassLoader());
+        opposite = in.readParcelable(User.class.getClassLoader());
+        me = in.readParcelable(User.class.getClassLoader());
         messages = in.createTypedArrayList(Message.CREATOR);
     }
 
@@ -35,20 +35,20 @@ public class Conversation implements Parcelable {
         }
     };
 
-    public User getFrom() {
-        return from;
+    public User getOpposite() {
+        return opposite;
     }
 
-    public void setFrom(User from) {
-        this.from = from;
+    public void setOpposite(User opposite) {
+        this.opposite = opposite;
     }
 
-    public User getTo() {
-        return to;
+    public User getMe() {
+        return me;
     }
 
-    public void setTo(User to) {
-        this.to = to;
+    public void setMe(User me) {
+        this.me = me;
     }
 
     public ArrayList<Message> getMessages() {
@@ -62,8 +62,8 @@ public class Conversation implements Parcelable {
     @Override
     public boolean equals(@Nullable Object obj) {
         Conversation compare = (Conversation) obj;
-        if (from.equals(compare.getFrom())) {
-            if (to.equals(compare.getTo())) {
+        if (me.equals(compare.getMe())) {
+            if (opposite.equals(compare.getOpposite())) {
                 return true;
             }
         }
@@ -77,8 +77,8 @@ public class Conversation implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeParcelable(from, 0);
-        dest.writeParcelable(to, 0);
+        dest.writeParcelable(opposite, 0);
+        dest.writeParcelable(me, 0);
         dest.writeTypedList(messages);
     }
 }

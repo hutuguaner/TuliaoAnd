@@ -21,15 +21,6 @@ public interface MainModel {
     void getUsersFinish();
 
     //
-    void getMsgsStart();
-
-    void getMsgsError(String msg);
-
-    void getMsgsSuccess(List<Message> messages);
-
-    void getMsgsFinish();
-
-    //
     void uploadPositionStart();
 
     void uploadPositionError(String msg);

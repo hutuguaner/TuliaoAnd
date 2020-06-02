@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import androidx.annotation.Nullable;
+import androidx.room.Entity;
 
 import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.commons.models.IUser;
@@ -11,12 +12,13 @@ import com.stfalcon.chatkit.commons.models.IUser;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+
 public class Message implements Parcelable, IMessage {
 
     private User from;
     private User to;
     private String content;
-    private long timeStamp;
+    private long timeStamp;//时间戳 统一用 10 位的
 
     public Message() {
     }

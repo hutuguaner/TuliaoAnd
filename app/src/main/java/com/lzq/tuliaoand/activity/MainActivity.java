@@ -6,9 +6,11 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -19,6 +21,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,6 +32,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.blankj.utilcode.util.ActivityUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
@@ -41,15 +45,20 @@ import com.lzq.tuliaoand.App;
 import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
 import com.lzq.tuliaoand.bean.Conversation;
+import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.bean.User;
 import com.lzq.tuliaoand.common.Const;
 import com.lzq.tuliaoand.common.SPKey;
 import com.lzq.tuliaoand.model.MainModel;
 import com.lzq.tuliaoand.presenter.MainPresenter;
+import com.lzq.tuliaoand.services.MyService;
 import com.orhanobut.logger.Logger;
 import com.pranavpandey.android.dynamic.utils.DynamicUnitUtils;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -94,14 +103,28 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     private Timer timer;
 
-    private ArrayList<Conversation> conversations;
-
     private YoYo.YoYoString yoYoString;
 
     private Map<String, Marker> markerMap;
 
     //private Queue<User> userQueue;
     private List<User> userList;
+
+    private MyService myService = null;
+
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            MyService.MyBinder myBinder = (MyService.MyBinder) iBinder;
+            myService = myBinder.getService();
+            myService.startTask();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+
+        }
+    };
 
 
     @Override
@@ -127,7 +150,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
 
-
+        bindService(new Intent(this, MyService.class), connection, BIND_AUTO_CREATE);
     }
 
 
@@ -191,7 +214,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     }
 
                     //
-                    for (final User user:userList){
+                    if (userList == null) userList = new ArrayList<>();
+                    for (final User user : userList) {
                         //
                         if (markerMap == null) markerMap = new HashMap<>();
                         if (markerMap.containsKey(user.getEmail())) {
@@ -235,9 +259,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     }
 
 
-                    //
-                    mainPresenter.getMsgs();
-
                 }
             };
         if (timer == null) timer = new Timer();
@@ -280,26 +301,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
-    private void receiveMessages(List<Message> messages) {
-        if (conversations == null) conversations = new ArrayList<>();
-        for (int i = 0; i < messages.size(); i++) {
-            Message message = messages.get(i);
-            Conversation conversation = new Conversation();
-
-            if (conversations.contains(conversation)) {
-                int index = conversations.indexOf(conversation);
-                conversations.get(index).getMessages().add(message);
-            } else {
-                ArrayList<Message> msgs = new ArrayList<>();
-                msgs.add(message);
-                conversation.setMessages(msgs);
-                conversations.add(conversation);
-            }
-
-        }
-    }
-
-
     private void updataBroadcastAndPostion(List<User> users) {
         if (userList == null) userList = new ArrayList<>();
 
@@ -334,6 +335,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -347,7 +360,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             return;
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.unregister();
-
+        unbindService(connection);
     }
 
     private void initView() {
@@ -532,9 +545,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     private void startMsgListActivity() {
-        if (conversations == null) conversations = new ArrayList<>();
         Intent conversationListIntent = new Intent(this, CommunicationListActivity.class);
-        conversationListIntent.putExtra("data", conversations);
         startActivity(conversationListIntent);
     }
 
@@ -598,37 +609,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     @Override
-    public void getMsgsStart() {
-
-    }
-
-    @Override
-    public void getMsgsError(String msg) {
-
-    }
-
-    @Override
-    public void getMsgsSuccess(List<Message> messages) {
-        if (messages == null || messages.size() < 1) return;
-        receiveMessages(messages);
-
-        if (yoYoString == null) {
-            yoYoString = YoYo.with(Techniques.Tada)
-                    .duration(700)
-                    .repeat(YoYo.INFINITE)
-                    .playOn(ivMessage);
-        } else {
-
-        }
-
-    }
-
-    @Override
-    public void getMsgsFinish() {
-
-    }
-
-    @Override
     public void uploadPositionStart() {
 
     }
@@ -669,18 +649,36 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(Event event) {
+        List<Message> messageList = event.messageList;
+        if (messageList == null || messageList.size() < 1) return;
+        if (ActivityUtils.getTopActivity() instanceof MainActivity) {
+            if (yoYoString == null) {
+                yoYoString = YoYo.with(Techniques.Tada)
+                        .duration(700)
+                        .repeat(YoYo.INFINITE)
+                        .playOn(ivMessage);
+            } else {
+
+            }
+        }
+    }
+
+
     @Override
     public boolean onMarkerClick(Marker marker, MapView mapView) {
         String email = marker.getId();
         if (email.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
             ToastUtils.showShort("你自己");
         } else {
-            if (conversations == null) conversations = new ArrayList<>();
-            Conversation conversation = new Conversation();
-
-
+            Intent intent = new Intent(this, ConversationActivity.class);
+            intent.putExtra("email", email);
+            startActivity(intent);
         }
 
         return false;
     }
+
+
 }

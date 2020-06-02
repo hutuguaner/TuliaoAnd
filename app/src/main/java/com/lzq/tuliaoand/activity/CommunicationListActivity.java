@@ -10,13 +10,20 @@ import android.widget.RelativeLayout;
 import com.lzq.tuliaoand.R;
 import com.lzq.tuliaoand.adapter.AdapterCommunicationList;
 import com.lzq.tuliaoand.bean.Conversation;
+import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
+import com.lzq.tuliaoand.model.CommunicationListModel;
+import com.lzq.tuliaoand.presenter.CommunicationListPresenter;
 import com.orhanobut.logger.Logger;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CommunicationListActivity extends BaseActivity implements View.OnClickListener, AdapterView.OnItemClickListener {
+public class CommunicationListActivity extends BaseActivity implements View.OnClickListener, AdapterView.OnItemClickListener, CommunicationListModel {
 
     private RelativeLayout rlBack;
     private ListView lv;
@@ -24,20 +31,33 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
 
     private List<Conversation> conversations;
 
+    private CommunicationListPresenter presenter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        conversations = getIntent().getParcelableArrayListExtra("data");
         setContentView(R.layout.activity_communication_list);
         initView();
+        presenter = new CommunicationListPresenter(this);
+        presenter.getMessagesFromDB();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
     }
 
     private void initView() {
         rlBack = findViewById(R.id.rl_communication_list_back);
         rlBack.setOnClickListener(this);
         lv = findViewById(R.id.lv_communication_list);
-        adapterCommunicationList = new AdapterCommunicationList(this, conversations);
-        lv.setAdapter(adapterCommunicationList);
         lv.setOnItemClickListener(this);
     }
 
@@ -57,9 +77,21 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
 
 
     private void startConversationActivity(int postion) {
-        ArrayList<Message> messages = conversations.get(postion).getMessages();
+        Conversation conversation = conversations.get(postion);
         Intent intent = new Intent(this, ConversationActivity.class);
-        intent.putExtra("data", messages);
+        intent.putExtra("email", conversation.getOpposite());
         startActivity(intent);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(Event event){
+
+    }
+
+    @Override
+    public void onMessageFromDB(List<Conversation> conversations) {
+        this.conversations = conversations;
+        adapterCommunicationList = new AdapterCommunicationList(this, conversations);
+        lv.setAdapter(adapterCommunicationList);
     }
 }

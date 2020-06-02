@@ -54,5 +54,11 @@ dependencies {
     implementation project(path:':osmdroid-android')
     // https://github.com/pranavpandey/dynamic-utils
     implementation 'com.pranavpandey.android:dynamic-utils:3.2.1'
+    // room db
+    def room_version = "2.0.0-beta01"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version" // use kapt for Kotlin
+    //
+    implementation 'org.greenrobot:eventbus:3.2.0'
 
 }

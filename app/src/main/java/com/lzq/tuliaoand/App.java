@@ -6,8 +6,11 @@ import android.content.Intent;
 import android.os.Environment;
 import android.util.Log;
 
+import androidx.room.Room;
+
 import com.blankj.utilcode.util.CrashUtils;
 import com.lzq.tuliaoand.common.Const;
+import com.lzq.tuliaoand.common.MyDatabase;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.cache.CacheEntity;
 import com.lzy.okgo.cache.CacheMode;
@@ -41,6 +44,8 @@ public class App extends Application {
         okgoInit();
         //
         Logger.addLogAdapter(new AndroidLogAdapter());
+        //
+        myDatabase = Room.databaseBuilder(getApplicationContext(), MyDatabase.class, "tuliao").build();
     }
 
 
@@ -87,6 +92,10 @@ public class App extends Application {
     }
 
 
+    public static MyDatabase myDatabase = null;
+
+
+
 }
 
 
@@ -104,8 +113,16 @@ public class App extends Application {
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * <p>
+ * https://icons8.com/icons/set/bubble
  */
 
 /**
  * https://icons8.com/icons/set/bubble
+ */
+
+/**
+ * Copyright (C) 2012-2020 Markus Junginger, greenrobot (https://greenrobot.org)
+ *
+ * EventBus binaries and source code can be used according to the Apache License, Version 2.0.
  */

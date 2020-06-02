@@ -16,6 +16,7 @@ import com.blankj.utilcode.util.ToastUtils;
 import com.bumptech.glide.Glide;
 import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
+import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.common.SPKey;
 import com.lzq.tuliaoand.model.ConversationModel;
@@ -23,6 +24,10 @@ import com.lzq.tuliaoand.presenter.ConversationPresenter;
 import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
 
@@ -51,6 +56,18 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
         setContentView(R.layout.activity_conversation);
         initView();
         conversationPresenter = new ConversationPresenter(this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
     }
 
     private void initView() {
@@ -110,11 +127,10 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
     }
 
 
-
     @Override
     public void connectTimeOut() {
         ToastUtils.showLong("连接断开，请重新登录");
-        SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(),"");
+        SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), "");
         startActivity(new Intent(this, LoginActivity.class));
     }
 
@@ -135,6 +151,11 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
 
     @Override
     public void sendMsgFinish() {
+
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(Event event) {
 
     }
 }

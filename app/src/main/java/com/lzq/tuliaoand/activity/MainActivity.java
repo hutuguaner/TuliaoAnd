@@ -70,14 +70,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     private Location location;
 
-
-    private TimerTask timerTask;
-
-    private Timer timer;
-
     private YoYo.YoYoString yoYoString;
 
-    private Map<String, Marker> markerMap;
+    private Map<String, Marker> markerMap = new HashMap<>();
 
     //private Queue<User> userQueue;
     private List<User> userList = new ArrayList<>();
@@ -90,6 +85,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             MyService.MyBinder myBinder = (MyService.MyBinder) iBinder;
             myService = myBinder.getService();
 
+            if (location != null) {
+                myService.uploadPosition(location.getLongitude(), location.getLatitude());
+            }
             myService.startGetUserTask();
             myService.startGetMessageTask();
         }
@@ -125,116 +123,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
         bindService(new Intent(this, MyService.class), connection, BIND_AUTO_CREATE);
 
-        startTask();
         EventBus.getDefault().register(this);
     }
 
 
-    private void startTask() {
-
-        if (timerTask == null)
-            timerTask = new TimerTask() {
-                @Override
-                public void run() {
-
-
-                    synchronized (userList) {
-
-                        //清理下线用户 的地图marker
-                        if (userList != null && !userList.isEmpty()) {
-                            if (markerMap != null && !markerMap.isEmpty()) {
-                                Set<String> emails = markerMap.keySet();
-                                Iterator<String> iterator = emails.iterator();
-                                while (iterator.hasNext()) {
-                                    String email = iterator.next();
-                                    User user = new User();
-                                    user.setEmail(email);
-                                    if (!userList.contains(user)) {
-
-                                        Marker marker = markerMap.get(email);
-                                        mapView.getOverlayManager().remove(marker);
-                                        mapView.postInvalidate();
-                                        iterator.remove();
-                                    }
-                                }
-                            }
-                        } else {
-                            if (markerMap != null && !markerMap.isEmpty()) {
-                                Set<String> emails = markerMap.keySet();
-                                Iterator<String> iterator = emails.iterator();
-                                while (iterator.hasNext()) {
-                                    String email = iterator.next();
-                                    Marker marker = markerMap.get(email);
-                                    mapView.getOverlayManager().remove(marker);
-                                    mapView.postInvalidate();
-                                }
-                                markerMap.clear();
-                            }
-                        }
-
-                        //
-                        if (userList == null) userList = new ArrayList<>();
-                        for (final User user : userList) {
-                            //
-                            if (markerMap == null) markerMap = new HashMap<>();
-                            if (markerMap.containsKey(user.getEmail())) {
-                                setViewOrIconOnMarker(user.getBroadcast(), user.getEmail(), markerMap.get(user.getEmail()));
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-
-                                        if (MapView.getTileSystem().isValidLatitude(user.getLat()) && MapView.getTileSystem().isValidLongitude(user.getLng())) {
-                                            markerMap.get(user.getEmail()).setPosition(new GeoPoint(user.getLat(), user.getLng()));
-                                            mapView.invalidate();
-                                        }
-
-                                    }
-                                });
-
-                            } else {
-                                final Marker marker = new Marker(mapView);
-                                marker.setId(user.getEmail());
-                                marker.setOnMarkerClickListener(MainActivity.this);
-                                marker.setAnchor(Marker.ANCHOR_LEFT, Marker.ANCHOR_BOTTOM);
-                                marker.setInfoWindow(null);
-                                setViewOrIconOnMarker(user.getBroadcast(), user.getEmail(), marker);
-
-                                if (MapView.getTileSystem().isValidLatitude(user.getLat()) && MapView.getTileSystem().isValidLongitude(user.getLng())) {
-                                    marker.setPosition(new GeoPoint(user.getLat(), user.getLng()));
-
-                                    mapView.getOverlayManager().add(marker);
-                                    mapView.postInvalidate();
-                                    markerMap.put(user.getEmail(), marker);
-
-
-                                }
-
-                            }
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                    }
-
-
-                }
-            };
-        if (timer == null) timer = new Timer();
-
-        timer.schedule(timerTask, 500, 1000 * 5);
-    }
-
-
-    private void setViewOrIconOnMarker(String broadcast, String email, Marker marker) {
+    private void initMarker(double lng, double lat, String broadcast, String email, Marker marker) {
+        marker.setPosition(new GeoPoint(lat, lng));
+        marker.setOnMarkerClickListener(this);
+        marker.setId(email);
+        marker.setInfoWindow(null);
         if (StringUtils.isTrimEmpty(broadcast)) {
             if (email.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
                 marker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
             } else {
                 marker.setIcon(getResources().getDrawable(R.mipmap.ic_postion_curr));
             }
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         } else {
             TextView textView = (TextView) LayoutInflater.from(this).inflate(R.layout.view_marker, null);
 
@@ -245,20 +149,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 textView.setBackground(getResources().getDrawable(R.mipmap.ic_bubble_green));
                 textView.setTextColor(getResources().getColor(R.color.black));
             }
+            marker.setAnchor(Marker.ANCHOR_LEFT, Marker.ANCHOR_BOTTOM);
             textView.setTextSize(15f);
             textView.setText(broadcast);
 
             marker.setView(textView);
         }
-    }
-
-
-    private void stopTask() {
-        if (timerTask != null) {
-            timerTask.cancel();
-            timerTask = null;
-        }
-        if (timer != null) timer.purge();
     }
 
 
@@ -313,7 +209,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.unregister();
         unbindService(connection);
-        stopTask();
         EventBus.getDefault().unregister(this);
         myService.stopGetMessageTask();
         myService.stopGetUserTask();
@@ -417,15 +312,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             return;
         } else {
             this.location = location;
+            if (myService != null) {
+                myService.uploadPosition(this.location.getLongitude(), this.location.getLatitude());
+            }
+            mapZoomTo(this.location.getLongitude(), this.location.getLatitude());
+
             dismiss();
         }
     }
 
-
-    private void uploadPostion() {
-        Location location = LocationUtils.getLastKnownLocation((LocationManager) getSystemService(LOCATION_SERVICE));
-        sendPostionToServer(location.getLongitude(), location.getLatitude());
-    }
 
     private void mapZoomTo(double lon, double lat) {
         mapLocateTo(lon, lat);
@@ -439,38 +334,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         mapController.animateTo(point);
     }
 
-    private void showLocateMarker(GeoPoint geoPoint) {
-        if (markerMap == null) markerMap = new HashMap<>();
-        if (markerMap.containsKey(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
-            markerMap.get(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName())).setPosition(geoPoint);
-            mapView.invalidate();
-        } else {
-            Marker marker = new Marker(mapView);
-            marker.setInfoWindow(null);
-            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            marker.setPosition(geoPoint);
-            marker.setIcon(getResources().getDrawable(R.mipmap.ic_locate_blue));
-            mapView.getOverlayManager().add(marker);
-            mapView.invalidate();
-            markerMap.put(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()), marker);
-        }
-
-    }
-
-
-    private void showLocateMarker(double lon, double lat) {
-        GeoPoint geoPoint = new GeoPoint(lat, lon);
-        showLocateMarker(geoPoint);
-    }
-
-
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.iv_main_locate:
                 updataLocation();
-                showLocateMarker(location.getLongitude(), location.getLatitude());
-                mapZoomTo(location.getLongitude(), location.getLatitude());
                 break;
             case R.id.iv_main_twobubble:
                 startMsgListActivity();
@@ -505,27 +373,33 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
-    private void sendPostionToServer(double lng, double lat) {
-
-
-    }
-
-
     //---------------------------------
     @Override
     public void getLastKnownLocation(Location location) {
-
+        Log.i("lala", "getLastKnownLocation");
+        if (location != null) {
+            this.location = location;
+            if (myService != null) {
+                myService.uploadPosition(this.location.getLongitude(), this.location.getLatitude());
+            }
+        }
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        this.location = location;
-        if (myService != null)
-            myService.uploadPosition(location.getLongitude(), location.getLatitude());
+        Log.i("lala", "onLocationChanged");
+        if (location != null) {
+            this.location = location;
+            if (myService != null) {
+                myService.uploadPosition(this.location.getLongitude(), this.location.getLatitude());
+            }
+        }
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
+        Log.i("lala", "onStatusChanged");
+
     }
 
 
@@ -533,12 +407,19 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public void onEvent(Event event) {
         if (event == null) return;
         if (event.isConnectTimeOut) {
+            ToastUtils.showLong("连接超时，请重新登录");
             SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), "");
             startActivity(new Intent(this, LoginActivity.class));
             return;
         } else {
             if (event.users != null && event.users.size() > 0) {
-                updataBroadcastAndPostion(event.users);
+                Log.i("lala", "用户量 ： " + event.users.size());
+                for (int i = 0; i < event.users.size(); i++) {
+                    User item = event.users.get(i);
+                    Log.i("lala", item.getBroadcast() + " " + item.getEmail() + " " + item.getLat() + " " + item.getLng());
+                }
+                updateUserList(event.users);
+                updateMarker();
             }
             if (event.messageList != null && event.messageList.size() > 0) {
                 if (ActivityUtils.getTopActivity() instanceof MainActivity) {
@@ -554,6 +435,48 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             }
         }
 
+    }
+
+    private void updateUserList(List<User> users) {
+        this.userList.clear();
+        this.userList.addAll(users);
+    }
+
+    private void updateMarker() {
+        //先删掉 用户列表已经不存在 但是在地图上显示的 marker
+        Set<String> keySet = markerMap.keySet();
+        Iterator<String> iteratorKey = keySet.iterator();
+        while (iteratorKey.hasNext()) {
+            String key = iteratorKey.next();
+            User user = new User();
+            user.setEmail(key);
+            if (!userList.contains(user)) {
+                Log.i("lala", "remove marker");
+                markerMap.remove(key);
+                mapView.getOverlayManager().remove(markerMap.get(key));
+            }
+        }
+
+        //遍历 用户列表，如果地图上已经显示 则更新位置 如果地图上没有，则添加
+        for (int i = 0; i < userList.size(); i++) {
+            User user = userList.get(i);
+            if (markerMap.containsKey(user.getEmail())) {
+                //更新mark
+                Marker marker = markerMap.get(user.getEmail());
+                marker.setPosition(new GeoPoint(user.getLat(), user.getLng()));
+                mapView.invalidate();
+            } else {
+                //添加marker
+                Log.i("lala", "add marker : " + Thread.currentThread().getName());
+                Marker marker = new Marker(mapView);
+                initMarker(user.getLng(), user.getLng(), user.getBroadcast(), user.getEmail(), marker);
+
+                mapView.getOverlayManager().add(marker);
+                mapView.invalidate();
+                markerMap.put(user.getEmail(), marker);
+
+            }
+        }
     }
 
 

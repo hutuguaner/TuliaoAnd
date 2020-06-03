@@ -8,5 +8,7 @@ public class Event {
 
     public List<User> users;
 
+    public List<Conversation> conversations;
+
     public boolean isConnectTimeOut = false;
 }

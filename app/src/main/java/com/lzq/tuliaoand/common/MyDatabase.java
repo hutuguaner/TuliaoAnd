@@ -8,7 +8,8 @@ import com.lzq.tuliaoand.bean.MessageForRoom;
 import com.lzq.tuliaoand.dao.MessageDao;
 
 @Database(entities = {MessageForRoom.class},version = 1)
-public abstract class MyDatabase extends RoomDatabase {
+public abstract
+class MyDatabase extends RoomDatabase {
     public abstract MessageDao messageDao();
 
 

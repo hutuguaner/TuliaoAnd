@@ -9,6 +9,7 @@ import android.util.Log;
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.lzq.tuliaoand.App;
+import com.lzq.tuliaoand.bean.Conversation;
 import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.bean.MessageForRoom;
@@ -36,47 +37,181 @@ public class MyService extends Service {
     public MyService() {
     }
 
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    public void sendMessage(final Message message) {
-        JSONObject params = new JSONObject();
-        try {
-            params.put("from", message.getFrom().getEmail());
-            params.put("to", message.getTo().getEmail());
-            params.put("content", message.getContent());
-        } catch (JSONException e) {
-            e.printStackTrace();
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    private TimerTask getMessageFromDBTask;
+    private Timer getMessageFromDBTimer;
+
+    public void startGetMessageFromDBTask(final String oppositeEmail) {
+        if (getMessageFromDBTask == null) getMessageFromDBTask = new TimerTask() {
+            @Override
+            public void run() {
+                List<Message> messageList = getMessagesFromDB(oppositeEmail);
+                if (messageList != null && messageList.size() > 0) {
+                    Event event = new Event();
+                    event.messageList = messageList;
+                    EventBus.getDefault().post(event);
+                }
+            }
+        };
+        if (getMessageFromDBTimer == null) getMessageFromDBTimer = new Timer();
+        getMessageFromDBTimer.schedule(getMessageFromDBTask, 0, 1000);
+    }
+
+    public void stopGetMessageFromDBTask() {
+        if (getMessageFromDBTask != null) getMessageFromDBTask.cancel();
+        if (getMessageFromDBTimer != null) getMessageFromDBTimer.purge();
+        getMessageFromDBTask = null;
+    }
+
+
+    public List<Message> getMessagesFromDB(final String oppositeEmail) {
+
+        List<MessageForRoom> messageForRooms = new ArrayList<>();
+
+        List<MessageForRoom> oppositeSendToMe = App.myDatabase.messageDao().getMessagesBy(oppositeEmail, SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()));
+        for (int i = 0; i < oppositeSendToMe.size(); i++) {
+            Log.i("lala", "对方发给我 : " + oppositeSendToMe.get(i).getContent());
+        }
+        List<MessageForRoom> meSendToOpposite = App.myDatabase.messageDao().getMessagesBy(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()), oppositeEmail);
+        for (int i = 0; i < meSendToOpposite.size(); i++) {
+            Log.i("lala", "我发给对方 : " + meSendToOpposite.get(i).getContent());
         }
 
-        OkGo.<String>post(Const.UPLOAD_MSG).upJson(params).execute(new StringCallback() {
+        messageForRooms.addAll(oppositeSendToMe);
+        messageForRooms.addAll(meSendToOpposite);
+
+        List<Message> messages = new ArrayList<>();
+        for (int i = 0; i < messageForRooms.size(); i++) {
+            MessageForRoom messageForRoom = messageForRooms.get(i);
+            String fromEmail = messageForRoom.getFromEmail();
+            String toEmail = messageForRoom.getToEmail();
+            String conent = messageForRoom.getContent();
+            long time = messageForRoom.getTimeStamp();
+
+            Message message = new Message();
+            message.setContent(conent);
+            message.setTimeStamp(time);
+            User fromUser = new User();
+            fromUser.setEmail(fromEmail);
+
+            User toUser = new User();
+            toUser.setEmail(toEmail);
+            message.setFrom(fromUser);
+            message.setTo(toUser);
+
+            messages.add(message);
+        }
+        return messages;
+    }
+
+
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    private TimerTask getConverationFromDBTask;
+    private Timer getConversationFromDBTimer;
+
+    public void startGetConversationFromDbTask() {
+        if (getConverationFromDBTask == null) getConverationFromDBTask = new TimerTask() {
             @Override
-            public void onStart(Request<String, ? extends Request> request) {
-                super.onStart(request);
+            public void run() {
+                List<Conversation> conversations = getConversationFromDB();
+                if (conversations != null && conversations.size() > 0) {
+                    Event event = new Event();
+                    event.conversations = conversations;
+                    EventBus.getDefault().post(event);
+                }
+            }
+        };
+        if (getConversationFromDBTimer == null) getConversationFromDBTimer = new Timer();
+        getConversationFromDBTimer.schedule(getConverationFromDBTask, 0, 1000);
+    }
+
+    public void stopGetConversationFromDBTask() {
+        if (getConverationFromDBTask != null) getConverationFromDBTask.cancel();
+        if (getConversationFromDBTimer != null) getConversationFromDBTimer.purge();
+        getConverationFromDBTask = null;
+    }
+
+    private List<Conversation> getConversationFromDB() {
+
+        List<MessageForRoom> messageForRooms = App.myDatabase.messageDao().getMessages();
+        if (messageForRooms == null || messageForRooms.size() < 1) {
+            return null;
+        } else {
+            final List<Conversation> conversations = new ArrayList<>();
+            for (int i = 0; i < messageForRooms.size(); i++) {
+                MessageForRoom messageForRoom = messageForRooms.get(i);
+                String msgFromEmail = messageForRoom.getFromEmail();
+                String msgToEmail = messageForRoom.getToEmail();
+                String content = messageForRoom.getContent();
+                long time = messageForRoom.getTimeStamp();
+
+                Message message = new Message();
+                User msgFromUser = new User();
+                msgFromUser.setEmail(msgFromEmail);
+                User msgToUser = new User();
+                msgToUser.setEmail(msgToEmail);
+                message.setFrom(msgFromUser);
+                message.setTo(msgToUser);
+                message.setContent(content);
+                message.setTimeStamp(time);
+
+
+                Conversation conversation = new Conversation();
+                User me = new User();
+                me.setEmail(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()));
+                User opposite = new User();
+                opposite.setEmail(msgFromEmail.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName())) ? msgToEmail : msgFromEmail);
+                ArrayList<Message> messages = new ArrayList<>();
+                messages.add(message);
+                conversation.setMe(me);
+                conversation.setOpposite(opposite);
+                conversation.setMessages(messages);
+
+                if (conversations.contains(conversation)) {
+                    int index = conversations.indexOf(conversation);
+                    conversations.get(index).getMessages().add(message);
+                } else {
+                    conversations.add(conversation);
+                }
+
             }
 
-            @Override
-            public void onError(Response<String> response) {
-                super.onError(response);
-            }
+            return conversations;
+        }
 
+    }
+
+
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    public void sendMessage(final Message message) {
+        new Thread(new Runnable() {
             @Override
-            public void onSuccess(Response<String> response) {
+            public void run() {
+                JSONObject params = new JSONObject();
                 try {
-                    JSONObject result = new JSONObject(response.body());
-                    int code = result.getInt("code");
-                    if (code == 0) {
-                    } else if (code == 1) {
-                        String msg = result.getString("message");
-                    } else if (code == 2) {
-                    }
+                    params.put("from", message.getFrom().getEmail());
+                    params.put("to", message.getTo().getEmail());
+                    params.put("content", message.getContent());
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+                //上云
+                try {
+                    OkGo.<String>post(Const.UPLOAD_MSG).upJson(params).execute();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //本地库存储
+                MessageForRoom messageForRoom = new MessageForRoom();
+                messageForRoom.setTimeStamp(message.getTimeStamp());
+                messageForRoom.setContent(message.getContent());
+                messageForRoom.setToEmail(message.getTo().getEmail());
+                messageForRoom.setFromEmail(message.getFrom().getEmail());
+                messageForRoom.setHasRead(1);
+                App.myDatabase.messageDao().insert(messageForRoom);
             }
-            @Override
-            public void onFinish() {
-                super.onFinish();
-            }
-        });
+        }).start();
 
     }
 
@@ -143,7 +278,7 @@ public class MyService extends Service {
 
         if (getUserTimer == null) getUserTimer = new Timer();
 
-        getUserTimer.schedule(getUserTask, 0, 1000 * 5);
+        getUserTimer.schedule(getUserTask, 1000, 1000 * 5);
 
     }
 
@@ -166,7 +301,10 @@ public class MyService extends Service {
         }
         try {
             okhttp3.Response response = OkGo.<String>post(Const.GET_ALL_USERS).upJson(jsonObject).execute();
+
             JSONObject result = new JSONObject(response.body().string());
+            response.close();
+
             int code = result.getInt("code");
             if (code == 0) {
                 JSONArray data = result.getJSONArray("data");
@@ -194,6 +332,7 @@ public class MyService extends Service {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            Log.i("lala", "ex : " + e.getMessage());
         }
         return event;
     }
@@ -222,6 +361,7 @@ public class MyService extends Service {
 
             @Override
             public void onSuccess(Response<String> response) {
+                Log.i("lala","上传位置 ： "+response.body());
                 try {
                     JSONObject result = new JSONObject(response.body());
                     int code = result.getInt("code");
@@ -294,6 +434,7 @@ public class MyService extends Service {
         try {
             okhttp3.Response response = OkGo.<String>post(Const.GET_MSGS).upJson(jsonObject).execute();
             JSONObject result = new JSONObject(response.body().string());
+            response.close();
             int code = result.getInt("code");
             if (code == 0) {
                 JSONArray data = result.getJSONArray("data");

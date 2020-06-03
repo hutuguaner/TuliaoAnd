@@ -7,12 +7,12 @@ public class Const {
     public static String ip() {
         if (isRelease) {
             //return "192.168.1.13";
-            //return "192.168.1.4";
-            return "192.168.1.180";
+            return "192.168.1.4";
+            //return "192.168.1.180";
         } else {
             //return "192.168.1.13";
-            //return "192.168.1.4";
-            return "192.168.1.180";
+            return "192.168.1.4";
+            //return "192.168.1.180";
         }
     }
 

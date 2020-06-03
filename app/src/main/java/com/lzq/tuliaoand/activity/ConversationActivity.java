@@ -1,8 +1,11 @@
 package com.lzq.tuliaoand.activity;
 
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.database.DataSetObserver;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -20,8 +23,7 @@ import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.bean.User;
 import com.lzq.tuliaoand.common.SPKey;
-import com.lzq.tuliaoand.model.ConversationModel;
-import com.lzq.tuliaoand.presenter.ConversationPresenter;
+import com.lzq.tuliaoand.services.MyService;
 import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
@@ -35,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ConversationActivity extends BaseActivity implements View.OnClickListener, ConversationModel {
+public class ConversationActivity extends BaseActivity implements View.OnClickListener {
 
     private List<Message> messages = new ArrayList<>();
     private String oppositeEmail;
@@ -44,12 +46,24 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
     private ImageView ivSend;
     private TextView tvTitle;
 
-    private ConversationPresenter conversationPresenter;
-
     private MessagesList messagesList;
-    protected final String senderId = "0";
-    protected ImageLoader imageLoader;
     protected MessagesListAdapter<Message> messagesAdapter;
+
+    private MyService myService;
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            MyService.MyBinder myBinder = (MyService.MyBinder) iBinder;
+            myService = myBinder.getService();
+            myService.startGetMessageFromDBTask(oppositeEmail);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+
+        }
+    };
 
 
     @Override
@@ -58,11 +72,9 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
         oppositeEmail = getIntent().getStringExtra("email");
         setContentView(R.layout.activity_conversation);
         initView();
-        conversationPresenter = new ConversationPresenter(this);
-        conversationPresenter.getMessagesFromDB(oppositeEmail);
         EventBus.getDefault().register(this);
+        bindService(new Intent(this, MyService.class), serviceConnection, BIND_AUTO_CREATE);
     }
-
 
 
     private void initView() {
@@ -98,6 +110,8 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
     protected void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
+        if (myService != null) myService.stopGetMessageFromDBTask();
+        unbindService(serviceConnection);
     }
 
     @Override
@@ -129,10 +143,7 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
                         message.setTimeStamp(System.currentTimeMillis() / 1000);
                         message.setFrom(fromUser);
                         message.setTo(toUser);
-
-                        messagesAdapter.addToStart(message, true);
-
-                        conversationPresenter.sendMessage(message);
+                        myService.sendMessage(message);
                     } else {
                         ToastUtils.showShort("输入内容过长");
                     }
@@ -143,39 +154,6 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
     }
 
 
-    @Override
-    public void connectTimeOut() {
-        ToastUtils.showLong("连接断开，请重新登录");
-        SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), "");
-        startActivity(new Intent(this, LoginActivity.class));
-    }
-
-    @Override
-    public void sendMsgStart() {
-
-    }
-
-    @Override
-    public void sendMsgError(String msg) {
-
-    }
-
-    @Override
-    public void sendMsgSuccess() {
-
-    }
-
-    @Override
-    public void sendMsgFinish() {
-
-    }
-
-    @Override
-    public void onMsgFromDB(List<Message> messages) {
-        if (messages == null || messages.size() < 1) return;
-        messagesAdapter.addToEnd(messages, false);
-
-    }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(Event event) {

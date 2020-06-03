@@ -40,17 +40,12 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
         initView();
         presenter = new CommunicationListPresenter(this);
         presenter.getMessagesFromDB();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
         EventBus.getDefault().register(this);
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onDestroy() {
+        super.onDestroy();
         EventBus.getDefault().unregister(this);
     }
 
@@ -84,12 +79,13 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onEvent(Event event){
+    public void onEvent(Event event) {
 
     }
 
     @Override
     public void onMessageFromDB(List<Conversation> conversations) {
+        if (conversations == null || conversations.size() < 1) return;
         this.conversations = conversations;
         adapterCommunicationList = new AdapterCommunicationList(this, conversations);
         lv.setAdapter(adapterCommunicationList);

@@ -5,22 +5,15 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -28,7 +21,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,59 +28,40 @@ import com.blankj.utilcode.util.ActivityUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
-import com.bumptech.glide.load.resource.bitmap.BitmapDrawableDecoder;
-import com.bumptech.glide.load.resource.bitmap.BitmapDrawableEncoder;
-import com.bumptech.glide.load.resource.bitmap.BitmapDrawableResource;
 import com.daimajia.androidanimations.library.Techniques;
 import com.daimajia.androidanimations.library.YoYo;
-import com.lzq.tuliaoand.App;
 import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
-import com.lzq.tuliaoand.bean.Conversation;
 import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.bean.User;
-import com.lzq.tuliaoand.common.Const;
 import com.lzq.tuliaoand.common.SPKey;
-import com.lzq.tuliaoand.model.MainModel;
-import com.lzq.tuliaoand.presenter.MainPresenter;
 import com.lzq.tuliaoand.services.MyService;
 import com.orhanobut.logger.Logger;
-import com.pranavpandey.android.dynamic.utils.DynamicUnitUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.util.LocationUtils;
-import org.osmdroid.util.TileSystem;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow;
-import org.w3c.dom.Text;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener, com.lzq.tuliaoand.subutil.util.LocationUtils.OnLocationChangeListener, MainModel, Marker.OnMarkerClickListener {
+public class MainActivity extends BaseActivity implements View.OnClickListener, com.lzq.tuliaoand.subutil.util.LocationUtils.OnLocationChangeListener, Marker.OnMarkerClickListener {
 
     private MapView mapView;
     private MapController mapController;
@@ -97,7 +70,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     private Location location;
 
-    private MainPresenter mainPresenter;
 
     private TimerTask timerTask;
 
@@ -108,7 +80,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     private Map<String, Marker> markerMap;
 
     //private Queue<User> userQueue;
-    private List<User> userList;
+    private List<User> userList = new ArrayList<>();
 
     private MyService myService = null;
 
@@ -117,7 +89,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             MyService.MyBinder myBinder = (MyService.MyBinder) iBinder;
             myService = myBinder.getService();
-            myService.startTask();
+
+            myService.startGetUserTask();
+            myService.startGetMessageTask();
         }
 
         @Override
@@ -130,7 +104,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mainPresenter = new MainPresenter(this);
 
         initPermission();
         setContentView(R.layout.activity_main);
@@ -151,111 +124,99 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
 
         bindService(new Intent(this, MyService.class), connection, BIND_AUTO_CREATE);
+
+        startTask();
+        EventBus.getDefault().register(this);
     }
 
 
-    private void resumeTask() {
+    private void startTask() {
 
         if (timerTask == null)
             timerTask = new TimerTask() {
                 @Override
                 public void run() {
-                    //
-                    if (location != null) {
-                        mainPresenter.uploadPosition(location.getLongitude(), location.getLatitude());
-                    }
 
-                    //
-                    try {
-                        Thread.sleep(1000 * 1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
 
-                    //
-                    mainPresenter.getUsers();
+                    synchronized (userList) {
 
-                    //
-                    try {
-                        Thread.sleep(1000 * 1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                        //清理下线用户 的地图marker
+                        if (userList != null && !userList.isEmpty()) {
+                            if (markerMap != null && !markerMap.isEmpty()) {
+                                Set<String> emails = markerMap.keySet();
+                                Iterator<String> iterator = emails.iterator();
+                                while (iterator.hasNext()) {
+                                    String email = iterator.next();
+                                    User user = new User();
+                                    user.setEmail(email);
+                                    if (!userList.contains(user)) {
 
-                    //清理下线用户 的地图marker
-                    if (userList != null && !userList.isEmpty()) {
-                        if (markerMap != null && !markerMap.isEmpty()) {
-                            Set<String> emails = markerMap.keySet();
-                            Iterator<String> iterator = emails.iterator();
-                            while (iterator.hasNext()) {
-                                String email = iterator.next();
-                                User user = new User();
-                                user.setEmail(email);
-                                if (!userList.contains(user)) {
+                                        Marker marker = markerMap.get(email);
+                                        mapView.getOverlayManager().remove(marker);
+                                        mapView.postInvalidate();
+                                        iterator.remove();
+                                    }
+                                }
+                            }
+                        } else {
+                            if (markerMap != null && !markerMap.isEmpty()) {
+                                Set<String> emails = markerMap.keySet();
+                                Iterator<String> iterator = emails.iterator();
+                                while (iterator.hasNext()) {
+                                    String email = iterator.next();
                                     Marker marker = markerMap.get(email);
                                     mapView.getOverlayManager().remove(marker);
                                     mapView.postInvalidate();
-                                    iterator.remove();
                                 }
+                                markerMap.clear();
                             }
                         }
-                    } else {
-                        if (markerMap != null && !markerMap.isEmpty()) {
-                            Set<String> emails = markerMap.keySet();
-                            Iterator<String> iterator = emails.iterator();
-                            while (iterator.hasNext()) {
-                                String email = iterator.next();
-                                Marker marker = markerMap.get(email);
-                                mapView.getOverlayManager().remove(marker);
-                                mapView.postInvalidate();
-                            }
-                            markerMap.clear();
-                        }
-                    }
 
-                    //
-                    if (userList == null) userList = new ArrayList<>();
-                    for (final User user : userList) {
                         //
-                        if (markerMap == null) markerMap = new HashMap<>();
-                        if (markerMap.containsKey(user.getEmail())) {
-                            setViewOrIconOnMarker(user.getBroadcast(), user.getEmail(), markerMap.get(user.getEmail()));
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
+                        if (userList == null) userList = new ArrayList<>();
+                        for (final User user : userList) {
+                            //
+                            if (markerMap == null) markerMap = new HashMap<>();
+                            if (markerMap.containsKey(user.getEmail())) {
+                                setViewOrIconOnMarker(user.getBroadcast(), user.getEmail(), markerMap.get(user.getEmail()));
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
 
-                                    if (MapView.getTileSystem().isValidLatitude(user.getLat()) && MapView.getTileSystem().isValidLongitude(user.getLng())) {
-                                        markerMap.get(user.getEmail()).setPosition(new GeoPoint(user.getLat(), user.getLng()));
-                                        mapView.invalidate();
+                                        if (MapView.getTileSystem().isValidLatitude(user.getLat()) && MapView.getTileSystem().isValidLongitude(user.getLng())) {
+                                            markerMap.get(user.getEmail()).setPosition(new GeoPoint(user.getLat(), user.getLng()));
+                                            mapView.invalidate();
+                                        }
+
                                     }
+                                });
+
+                            } else {
+                                final Marker marker = new Marker(mapView);
+                                marker.setId(user.getEmail());
+                                marker.setOnMarkerClickListener(MainActivity.this);
+                                marker.setAnchor(Marker.ANCHOR_LEFT, Marker.ANCHOR_BOTTOM);
+                                marker.setInfoWindow(null);
+                                setViewOrIconOnMarker(user.getBroadcast(), user.getEmail(), marker);
+
+                                if (MapView.getTileSystem().isValidLatitude(user.getLat()) && MapView.getTileSystem().isValidLongitude(user.getLng())) {
+                                    marker.setPosition(new GeoPoint(user.getLat(), user.getLng()));
+
+                                    mapView.getOverlayManager().add(marker);
+                                    mapView.postInvalidate();
+                                    markerMap.put(user.getEmail(), marker);
+
 
                                 }
-                            });
-
-                        } else {
-                            final Marker marker = new Marker(mapView);
-                            marker.setId(user.getEmail());
-                            marker.setOnMarkerClickListener(MainActivity.this);
-                            marker.setAnchor(Marker.ANCHOR_LEFT, Marker.ANCHOR_BOTTOM);
-                            marker.setInfoWindow(null);
-                            setViewOrIconOnMarker(user.getBroadcast(), user.getEmail(), marker);
-
-                            if (MapView.getTileSystem().isValidLatitude(user.getLat()) && MapView.getTileSystem().isValidLongitude(user.getLng())) {
-                                marker.setPosition(new GeoPoint(user.getLat(), user.getLng()));
-
-                                mapView.getOverlayManager().add(marker);
-                                mapView.postInvalidate();
-                                markerMap.put(user.getEmail(), marker);
-
 
                             }
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
 
-                        }
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
                     }
 
 
@@ -292,7 +253,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
-    private void pauseTask() {
+    private void stopTask() {
         if (timerTask != null) {
             timerTask.cancel();
             timerTask = null;
@@ -301,13 +262,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
-    private void updataBroadcastAndPostion(List<User> users) {
-        if (userList == null) userList = new ArrayList<>();
+    private void updataBroadcastAndPostion(final List<User> users) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (userList) {
 
-        userList.clear();
+                    userList.clear();
 
-        userList.addAll(users);
-
+                    userList.addAll(users);
+                }
+            }
+        }).start();
     }
 
     private String getCurrLoginEmail() {
@@ -322,7 +288,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         if (StringUtils.isTrimEmpty(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
             startActivity(new Intent(this, LoginActivity.class));
         } else {
-            resumeTask();
         }
 
     }
@@ -331,19 +296,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     protected void onPause() {
         super.onPause();
         mapView.onPause();
-        pauseTask();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        EventBus.getDefault().unregister(this);
     }
 
     @Override
@@ -361,6 +313,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.unregister();
         unbindService(connection);
+        stopTask();
+        EventBus.getDefault().unregister(this);
+        myService.stopGetMessageTask();
+        myService.stopGetUserTask();
     }
 
     private void initView() {
@@ -531,8 +487,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         ToastUtils.showShort("最多输入20个字符");
                         return;
                     }
-
-                    mainPresenter.uploadBroadCast(broadMsg);
+                    myService.uploadBroadCast(broadMsg);
                 }
                 break;
         }
@@ -555,11 +510,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     }
 
-    private void sendBroadCastToServer(String broadcast) {
-
-
-    }
-
 
     //---------------------------------
     @Override
@@ -570,6 +520,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     public void onLocationChanged(Location location) {
         this.location = location;
+        if (myService != null)
+            myService.uploadPosition(location.getLongitude(), location.getLatitude());
     }
 
     @Override
@@ -577,92 +529,31 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
-    @Override
-    public void connectTimeOut() {
-        ToastUtils.showLong("连接断开，请重新登录");
-        SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), "");
-        startActivity(new Intent(this, LoginActivity.class));
-    }
-
-    //--------------------------------
-    @Override
-    public void getUsersStart() {
-
-    }
-
-    @Override
-    public void getUsersError(String err) {
-
-    }
-
-    @Override
-    public void getUsersSuccess(List<User> users) {
-        if (users == null || users.size() < 1) return;
-        updataBroadcastAndPostion(users);
-
-
-    }
-
-    @Override
-    public void getUsersFinish() {
-
-    }
-
-    @Override
-    public void uploadPositionStart() {
-
-    }
-
-    @Override
-    public void uploadPositionError(String msg) {
-
-    }
-
-    @Override
-    public void uploadPositionSuccess() {
-
-    }
-
-    @Override
-    public void uploadPositionFinish() {
-
-    }
-
-    @Override
-    public void uploadBroadcastStart() {
-
-    }
-
-    @Override
-    public void uploadBroadcastError(String msg) {
-
-    }
-
-    @Override
-    public void uploadBroadcastSuccess() {
-
-    }
-
-    @Override
-    public void uploadBroadcastFinish() {
-
-    }
-
-
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(Event event) {
-        List<Message> messageList = event.messageList;
-        if (messageList == null || messageList.size() < 1) return;
-        if (ActivityUtils.getTopActivity() instanceof MainActivity) {
-            if (yoYoString == null) {
-                yoYoString = YoYo.with(Techniques.Tada)
-                        .duration(700)
-                        .repeat(YoYo.INFINITE)
-                        .playOn(ivMessage);
-            } else {
+        if (event == null) return;
+        if (event.isConnectTimeOut) {
+            SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), "");
+            startActivity(new Intent(this, LoginActivity.class));
+            return;
+        } else {
+            if (event.users != null && event.users.size() > 0) {
+                updataBroadcastAndPostion(event.users);
+            }
+            if (event.messageList != null && event.messageList.size() > 0) {
+                if (ActivityUtils.getTopActivity() instanceof MainActivity) {
+                    if (yoYoString == null) {
+                        yoYoString = YoYo.with(Techniques.Tada)
+                                .duration(700)
+                                .repeat(YoYo.INFINITE)
+                                .playOn(ivMessage);
+                    } else {
 
+                    }
+                }
             }
         }
+
     }
 
 
@@ -672,6 +563,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         if (email.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
             ToastUtils.showShort("你自己");
         } else {
+
             Intent intent = new Intent(this, ConversationActivity.class);
             intent.putExtra("email", email);
             startActivity(intent);

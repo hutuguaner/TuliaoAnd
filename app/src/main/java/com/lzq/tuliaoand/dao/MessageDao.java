@@ -18,13 +18,11 @@ public interface MessageDao {
     @Insert
     void insert(List<MessageForRoom> messageForRooms);
 
-    @Query("delete from message where conversation_id=(:conversationId)")
-    void delete(String conversationId);
-
-    @Query("select * from message where conversation_id=(:conversationId)")
-    List<MessageForRoom> getMessages(String conversationId);
 
     @Query("select * from message")
     List<MessageForRoom> getMessages();
+
+    @Query("select * from message where email_from=:fromEmail and email_to=:toEmail")
+    List<MessageForRoom> getMessagesBy(String fromEmail,String toEmail);
 
 }

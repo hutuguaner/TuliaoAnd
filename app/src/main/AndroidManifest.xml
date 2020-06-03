@@ -35,7 +35,9 @@
         android:theme="@style/Theme.AppCompat.Light.NoActionBar"
         android:usesCleartextTraffic="true"
         tools:replace="android:icon">
-        <activity android:name=".activity.ConversationActivity"></activity>
+        <activity
+            android:name=".activity.ConversationActivity"
+            android:launchMode="singleTop"></activity>
 
         <service
             android:name=".services.MyService"

@@ -45,7 +45,7 @@ public class App extends Application {
         //
         Logger.addLogAdapter(new AndroidLogAdapter());
         //
-        myDatabase = Room.databaseBuilder(getApplicationContext(), MyDatabase.class, "tuliao").build();
+        myDatabase = Room.databaseBuilder(getApplicationContext(), MyDatabase.class, "tuliao.db").allowMainThreadQueries().build();
     }
 
 

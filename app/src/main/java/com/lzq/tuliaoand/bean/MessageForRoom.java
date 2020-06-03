@@ -8,10 +8,11 @@ import androidx.room.PrimaryKey;
 
 @Entity(tableName = "message")
 public class MessageForRoom {
+
     @NonNull
-    @PrimaryKey
-    @ColumnInfo(name = "conversation_id")
-    private String conversationId;//規則，当前用户email拼接上对方email
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "uid")
+    private int uid;
     @ColumnInfo(name = "email_from")
     private String fromEmail;
     @ColumnInfo(name = "email_to")
@@ -21,17 +22,17 @@ public class MessageForRoom {
     @ColumnInfo(name = "time_stamp")
     private long timeStamp;//时间戳 统一用十位的
     @ColumnInfo(name = "has_read")
-    private boolean hasRead = false;
+    private int hasRead = 0;//0 未读，1 已读
 
     public MessageForRoom() {
     }
 
-    public String getConversationId() {
-        return conversationId;
+    public int getUid() {
+        return uid;
     }
 
-    public void setConversationId(String conversationId) {
-        this.conversationId = conversationId;
+    public void setUid(int uid) {
+        this.uid = uid;
     }
 
     public String getFromEmail() {
@@ -66,11 +67,12 @@ public class MessageForRoom {
         this.timeStamp = timeStamp;
     }
 
-    public boolean isHasRead() {
+
+    public int getHasRead() {
         return hasRead;
     }
 
-    public void setHasRead(boolean hasRead) {
+    public void setHasRead(int hasRead) {
         this.hasRead = hasRead;
     }
 }

@@ -16,5 +16,8 @@ public interface ConversationModel {
     void sendMsgFinish();
 
 
+    //
+    void onMsgFromDB(List<Message> messages);
+
 
 }

@@ -42,7 +42,7 @@ import java.util.List;
 public class ConversationActivity extends BaseActivity implements View.OnClickListener {
 
     private List<Message> messages = new ArrayList<>();
-    private String oppositeEmail;
+    public static String oppositeEmail;
     private RelativeLayout rlBack;
     private EditText etInput;
     private ImageView ivSend;
@@ -161,6 +161,8 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(Event event) {
+        if (event == null) return;
+        if (event.type != Event.TYPE_CONVERSATION) return;
         List<Message> messages = event.messageList;
         if (messages == null || messages.size() < 1) return;
 

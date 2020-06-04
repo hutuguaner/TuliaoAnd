@@ -1,8 +1,13 @@
 package com.lzq.tuliaoand;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +18,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
@@ -31,6 +37,10 @@ import com.lzy.okgo.request.base.Request;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
+import pub.devrel.easypermissions.EasyPermissions;
+
 public class LoginActivity extends BaseActivity implements View.OnClickListener {
 
     private EditText etEmail;
@@ -41,10 +51,56 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
+        initPermission();
         initView();
 
     }
+
+    /**
+     * android 6.0 以上需要动态申请权限
+     */
+    private void initPermission() {
+        if (Build.VERSION.SDK_INT < 23) return;
+        String permissions[] = {
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.ACCESS_NETWORK_STATE,
+                Manifest.permission.INTERNET,
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.CAMERA
+        };
+
+        ArrayList<String> toApplyList = new ArrayList<String>();
+
+        for (String perm : permissions) {
+            if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this, perm)) {
+                toApplyList.add(perm);
+                //进入到这里代表没有权限.
+
+            }
+        }
+        String tmpList[] = new String[toApplyList.size()];
+        if (!toApplyList.isEmpty()) {
+            ActivityCompat.requestPermissions(this, toApplyList.toArray(tmpList), 123);
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        for (int i = 0; i < grantResults.length; i++) {
+            if (grantResults[i] != 0) {
+                //说明 权限申请 被拒绝
+                Toast.makeText(LoginActivity.this, "请全部接受权限申请，否则将无法使用", Toast.LENGTH_LONG).show();
+                LoginActivity.this.finish();
+                return;
+            }
+        }
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+        //拿到权限后 才能设置的一些配置项 放这里
+    }
+
 
     private void initView() {
         etEmail = findViewById(R.id.et_login_email);

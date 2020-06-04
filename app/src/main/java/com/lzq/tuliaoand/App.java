@@ -20,6 +20,8 @@ import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
+import com.umeng.analytics.MobclickAgent;
+import com.umeng.commonsdk.UMConfigure;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,6 +48,16 @@ public class App extends Application {
         Logger.addLogAdapter(new AndroidLogAdapter());
         //
         myDatabase = Room.databaseBuilder(getApplicationContext(), MyDatabase.class, "tuliao.db").allowMainThreadQueries().build();
+        //
+        initYouMeng();
+    }
+
+
+    private void initYouMeng(){
+        // 初始化SDK
+        UMConfigure.init(this, "5ed90c4b167edd9b9b000032", "Umeng", UMConfigure.DEVICE_TYPE_PHONE, null);
+        // 选用AUTO页面采集模式
+        MobclickAgent.setPageCollectionMode(MobclickAgent.PageMode.AUTO);
     }
 
 

@@ -55,6 +55,7 @@ public class MyService extends Service {
                 if (messageList != null && messageList.size() > 0) {
                     Event event = new Event();
                     event.messageList = messageList;
+                    event.type = Event.TYPE_CONVERSATION;
                     EventBus.getDefault().post(event);
                 }
             }
@@ -148,6 +149,7 @@ public class MyService extends Service {
                 if (conversations != null && conversations.size() > 0) {
                     Event event = new Event();
                     event.conversations = conversations;
+                    event.type = Event.TYPE_COMMUNICATION;
                     EventBus.getDefault().post(event);
                 }
             }
@@ -307,6 +309,7 @@ public class MyService extends Service {
             public void run() {
                 Event event = getUsers();
                 if (event != null)
+                    event.type = Event.TYPE_MAIN;
                     EventBus.getDefault().post(event);
 
             }
@@ -430,6 +433,8 @@ public class MyService extends Service {
             public void run() {
                 List<Message> messageList = getMsgs();
                 if (messageList != null && messageList.size() > 0) {
+
+
                     //
                     List<MessageForRoom> messageForRooms = new ArrayList<>();
                     for (int i = 0; i < messageList.size(); i++) {
@@ -442,6 +447,13 @@ public class MyService extends Service {
                         messageForRooms.add(messageForRoom);
                     }
                     App.myDatabase.messageDao().insert(messageForRooms);
+
+                    //告诉主页 有消息了
+                    Event event = new Event();
+                    event.messageList = messageList;
+                    event.type = Event.TYPE_MAIN;
+                    EventBus.getDefault().post(event);
+
                 }
             }
         };

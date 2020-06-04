@@ -21,13 +21,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.blankj.utilcode.util.ActivityUtils;
 import com.blankj.utilcode.util.SPUtils;
+import com.blankj.utilcode.util.ShadowUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
+import com.blankj.utilcode.util.VibrateUtils;
 import com.daimajia.androidanimations.library.Techniques;
 import com.daimajia.androidanimations.library.YoYo;
 import com.lzq.tuliaoand.LoginActivity;
@@ -103,27 +106,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        initPermission();
         setContentView(R.layout.activity_main);
         initView();
         initMap();
         initFriendlyToast();
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
-
         bindService(new Intent(this, MyService.class), connection, BIND_AUTO_CREATE);
 
         EventBus.getDefault().register(this);
+
+        if (StringUtils.isTrimEmpty(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
+            startActivity(new Intent(this, LoginActivity.class));
+        } else {
+            com.lzq.tuliaoand.subutil.util.LocationUtils.register(1000, 5, this);
+
+        }
     }
 
 
@@ -141,8 +138,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             }
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         } else {
-            TextView textView = (TextView) LayoutInflater.from(this).inflate(R.layout.view_marker, null);
-
+            RelativeLayout relativeLayout = (RelativeLayout) LayoutInflater.from(this).inflate(R.layout.view_marker, null);
+            TextView textView = (TextView) relativeLayout.getChildAt(0);
             if (email.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
                 textView.setBackground(getResources().getDrawable(R.mipmap.ic_bubble_blue));
                 textView.setTextColor(getResources().getColor(R.color.white));
@@ -153,7 +150,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             marker.setAnchor(Marker.ANCHOR_LEFT, Marker.ANCHOR_BOTTOM);
             textView.setTextSize(15f);
             textView.setText(broadcast);
-
             marker.setView(textView);
         }
         return marker;
@@ -183,10 +179,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     protected void onResume() {
         super.onResume();
         mapView.onResume();
-        if (StringUtils.isTrimEmpty(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
-            startActivity(new Intent(this, LoginActivity.class));
-        } else {
-        }
+
+        updataLocation();
 
     }
 
@@ -248,7 +242,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         boolean isJustInstall = SPUtils.getInstance().getBoolean(SPKey.IS_JUST_INSTALL.getUniqueName(), true);
         if (isJustInstall) {
             SPUtils.getInstance().put(SPKey.IS_JUST_INSTALL.getUniqueName(), false);
-            normal("刚刚安装，地图加载较慢，随着使用，地图加载会越来越快", true);
+            //normal("刚刚安装，地图加载较慢，随着使用，地图加载会越来越快", true);
+            ToastUtils.showLong("地图加载速度会越来越快");
         } else {
 
         }
@@ -256,52 +251,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     //--------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    /**
-     * android 6.0 以上需要动态申请权限
-     */
-    private void initPermission() {
-        if (Build.VERSION.SDK_INT < 23) return;
-        String permissions[] = {
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.ACCESS_NETWORK_STATE,
-                Manifest.permission.INTERNET,
-                Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.CAMERA
-        };
 
-        ArrayList<String> toApplyList = new ArrayList<String>();
-
-        for (String perm : permissions) {
-            if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this, perm)) {
-                toApplyList.add(perm);
-                //进入到这里代表没有权限.
-
-            }
-        }
-        String tmpList[] = new String[toApplyList.size()];
-        if (!toApplyList.isEmpty()) {
-            ActivityCompat.requestPermissions(this, toApplyList.toArray(tmpList), 123);
-        }
-
-    }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        for (int i = 0; i < grantResults.length; i++) {
-            if (grantResults[i] != 0) {
-                //说明 权限申请 被拒绝
-                Toast.makeText(MainActivity.this, "请全部接受权限申请，否则将无法使用", Toast.LENGTH_LONG).show();
-                MainActivity.this.finish();
-                return;
-            }
-        }
-        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
-        //拿到权限后 才能设置的一些配置项 放这里
-        updataLocation();
-    }
 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------
     //定位到当前位置
@@ -345,8 +297,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 break;
             case R.id.iv_main_twobubble:
                 startMsgListActivity();
-
-                if (yoYoString != null && yoYoString.isRunning()) {
+                if (yoYoString != null) {
                     yoYoString.stop();
                     yoYoString = null;
                 }
@@ -406,6 +357,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(Event event) {
         if (event == null) return;
+        if (event.type != Event.TYPE_MAIN) return;
         if (event.isConnectTimeOut) {
             ToastUtils.showLong("连接超时，请重新登录");
             SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), "");
@@ -420,13 +372,33 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             }
             if (event.messageList != null && event.messageList.size() > 0) {
                 if (ActivityUtils.getTopActivity() instanceof MainActivity) {
+                    Log.i("lala", " 收到消息 ： " + "main");
                     if (yoYoString == null) {
                         yoYoString = YoYo.with(Techniques.Tada)
                                 .duration(700)
                                 .repeat(YoYo.INFINITE)
                                 .playOn(ivMessage);
-                    } else {
+                    }
 
+                } else if (ActivityUtils.getTopActivity() instanceof CommunicationListActivity) {
+                    Log.i("lala", " 收到消息 ： " + "list");
+
+                } else if (ActivityUtils.getTopActivity() instanceof ConversationActivity) {
+                    Log.i("lala", " 收到消息 ： " + "conversation");
+
+                    for (int i = 0; i < event.messageList.size(); i++) {
+                        Message message = event.messageList.get(i);
+                        Log.i("lala", " " + message.getFrom().getEmail() + " " + ConversationActivity.oppositeEmail);
+                        if (!message.getFrom().getEmail().equals(ConversationActivity.oppositeEmail)) {
+                            if (yoYoString == null) {
+                                yoYoString = YoYo.with(Techniques.Tada)
+                                        .duration(700)
+                                        .repeat(YoYo.INFINITE)
+                                        .playOn(ivMessage);
+                            }
+
+                            break;
+                        }
                     }
                 }
             }
@@ -440,13 +412,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     private void updateMarker() {
-
-
-
-        for (int i=0;i<userList.size();i++){
-            User user = userList.get(i);
-            Log.i("lala"," 获取到的当前用户 ： "+user.getEmail()+" "+user.getBroadcast()+" "+user.getLng()+" "+user.getLat());
-        }
 
         //先删掉 用户列表已经不存在 但是在地图上显示的 marker
         Set<String> keySet = markerMap.keySet();
@@ -472,7 +437,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             } else {
 
             }
-            Marker marker =  createMarker(user.getLng(), user.getLat(), user.getBroadcast(), user.getEmail());
+            Marker marker = createMarker(user.getLng(), user.getLat(), user.getBroadcast(), user.getEmail());
 
             markerMap.put(user.getEmail(), marker);
             mapView.getOverlayManager().add(marker);

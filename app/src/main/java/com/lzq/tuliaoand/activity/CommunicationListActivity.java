@@ -116,6 +116,8 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(Event event) {
+        if (event == null) return;
+        if (event.type != Event.TYPE_COMMUNICATION) return;
         if (event != null) {
             if (!event.isConnectTimeOut) {
                 if (event.conversations != null && event.conversations.size() > 0) {
@@ -155,8 +157,8 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
             }
         }).start();
         //
-        Intent intent = new Intent(this,ConversationActivity.class);
-        intent.putExtra("email",oppositeEmail);
+        Intent intent = new Intent(this, ConversationActivity.class);
+        intent.putExtra("email", oppositeEmail);
         this.startActivity(intent);
     }
 }

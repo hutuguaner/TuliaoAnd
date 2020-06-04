@@ -5,12 +5,16 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 import com.blankj.utilcode.util.ToastUtils;
+import com.bumptech.glide.Glide;
+import com.lzq.tuliaoand.App;
 import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
 import com.lzq.tuliaoand.adapter.AdapterCommunicationList;
@@ -19,6 +23,10 @@ import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.services.MyService;
 import com.orhanobut.logger.Logger;
+import com.stfalcon.chatkit.commons.ImageLoader;
+import com.stfalcon.chatkit.commons.models.IDialog;
+import com.stfalcon.chatkit.dialogs.DialogsList;
+import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -27,13 +35,14 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CommunicationListActivity extends BaseActivity implements View.OnClickListener, AdapterView.OnItemClickListener {
+public class CommunicationListActivity extends BaseActivity implements View.OnClickListener, AdapterView.OnItemClickListener, DialogsListAdapter.OnDialogClickListener {
 
     private RelativeLayout rlBack;
-    private ListView lv;
-    private AdapterCommunicationList adapterCommunicationList;
 
-    private List<Conversation> conversations;
+    private List<Conversation> conversations = new ArrayList<>();
+
+    private DialogsList dlCommunication;
+    private DialogsListAdapter adapterCommunicationList;
 
     private MyService myService;
 
@@ -71,8 +80,16 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
     private void initView() {
         rlBack = findViewById(R.id.rl_communication_list_back);
         rlBack.setOnClickListener(this);
-        lv = findViewById(R.id.lv_communication_list);
-        lv.setOnItemClickListener(this);
+        dlCommunication = findViewById(R.id.dl_communication_list);
+        adapterCommunicationList = new DialogsListAdapter(new ImageLoader() {
+            @Override
+            public void loadImage(ImageView imageView, String url, Object payload) {
+                Glide.with(CommunicationListActivity.this).load(url).into(imageView);
+            }
+        });
+        adapterCommunicationList.setItems(conversations);
+        adapterCommunicationList.setOnDialogClickListener(this);
+        dlCommunication.setAdapter(adapterCommunicationList);
     }
 
     @Override
@@ -102,9 +119,21 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
         if (event != null) {
             if (!event.isConnectTimeOut) {
                 if (event.conversations != null && event.conversations.size() > 0) {
-                    this.conversations = event.conversations;
-                    adapterCommunicationList = new AdapterCommunicationList(this, conversations);
-                    lv.setAdapter(adapterCommunicationList);
+
+                    for (int i = 0; i < event.conversations.size(); i++) {
+                        Conversation item = event.conversations.get(i);
+
+                        if (conversations.contains(item)) {
+                            //更新
+                            int index = conversations.indexOf(item);
+                            conversations.get(index).setMessages(item.getMessages());
+                            boolean isUpdateOk = adapterCommunicationList.updateDialogWithMessage(item.getId(), item.getLastMessage());
+                        } else {
+                            conversations.add(item);
+                            //adapterCommunicationList.addItem(item);
+                        }
+                    }
+
                 }
             } else {
                 ToastUtils.showLong("连接超时，请重新登录");
@@ -114,4 +143,20 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
     }
 
 
+    @Override
+    public void onDialogClick(IDialog dialog) {
+        Conversation conversation = (Conversation) dialog;
+        final String oppositeEmail = conversation.getOpposite().getEmail();
+        //
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                App.myDatabase.messageDao().setMessageHasReaded(oppositeEmail);
+            }
+        }).start();
+        //
+        Intent intent = new Intent(this,ConversationActivity.class);
+        intent.putExtra("email",oppositeEmail);
+        this.startActivity(intent);
+    }
 }

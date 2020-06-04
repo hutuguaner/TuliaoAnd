@@ -172,6 +172,7 @@ public class Marker extends OverlayWithIW {
     }
 
 
+
     public void setView(View view) {
         Bitmap bitmap = createBitmapFromView(view, 1, 1);
         mIcon = new BitmapDrawable(mResources, bitmap);

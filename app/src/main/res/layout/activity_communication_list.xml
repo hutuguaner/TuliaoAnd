@@ -35,8 +35,8 @@
 
     </RelativeLayout>
 
-    <ListView
-        android:id="@+id/lv_communication_list"
+    <com.stfalcon.chatkit.dialogs.DialogsList
+        android:id="@+id/dl_communication_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

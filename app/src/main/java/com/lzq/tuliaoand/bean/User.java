@@ -13,7 +13,7 @@ import org.osmdroid.views.overlay.Marker;
 
 import java.util.List;
 
-public class User implements IUser , Parcelable {
+public class User implements IUser, Parcelable {
 
     private String email;
     private String broadcast;
@@ -76,7 +76,8 @@ public class User implements IUser , Parcelable {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-
+        if (email == null) return false;
+        if (obj == null) return false;
         return email.equals(((User) obj).getEmail());
     }
 
@@ -86,7 +87,7 @@ public class User implements IUser , Parcelable {
         if (myEmail.equals(email)) {
             return "1";
         } else {
-            return "0";
+            return "2";
         }
     }
 

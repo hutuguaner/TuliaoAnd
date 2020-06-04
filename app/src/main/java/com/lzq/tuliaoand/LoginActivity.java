@@ -112,6 +112,12 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
                         String email = jsonObject.getString("data");
                         SPUtils.getInstance().put(SPKey.EMAIL_LOGINED.getUniqueName(), email);
                         LoginActivity.this.finish();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                App.myDatabase.messageDao().delete();
+                            }
+                        }).start();
                         //startActivity(new Intent(LoginActivity.this, MainActivity.class));
                     } else {
                         String msg = jsonObject.getString("msg");

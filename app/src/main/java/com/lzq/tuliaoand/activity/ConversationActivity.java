@@ -6,6 +6,7 @@ import android.content.ServiceConnection;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -17,6 +18,7 @@ import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
 import com.bumptech.glide.Glide;
+import com.lzq.tuliaoand.App;
 import com.lzq.tuliaoand.LoginActivity;
 import com.lzq.tuliaoand.R;
 import com.lzq.tuliaoand.bean.Event;
@@ -50,6 +52,7 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
     protected MessagesListAdapter<Message> messagesAdapter;
 
     private MyService myService;
+
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -93,6 +96,7 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
             }
         });
         messagesList.setAdapter(messagesAdapter);
+
     }
 
 
@@ -147,6 +151,7 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
                     } else {
                         ToastUtils.showShort("输入内容过长");
                     }
+                    etInput.setText("");
                 }
 
                 break;
@@ -154,16 +159,28 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
     }
 
 
-
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(Event event) {
         List<Message> messages = event.messageList;
         if (messages == null || messages.size() < 1) return;
 
+        //判断当前 是否已有
+
         for (int i = 0; i < messages.size(); i++) {
-            messagesAdapter.addToStart(messages.get(i), true);
+            final Message message = messages.get(i);
+            if (this.messages.contains(message)) {
+
+            } else {
+                this.messages.add(message);
+                messagesAdapter.addToStart(messages.get(i), true);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        App.myDatabase.messageDao().setMessageHasReaded(message.getFrom().getEmail());
+                    }
+                }).start();
+            }
+
         }
-
-
     }
 }

@@ -13,12 +13,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-public class Message implements Parcelable, IMessage {
+public class Message implements Parcelable, IMessage, Comparable {
 
     private User from;
     private User to;
     private String content;
     private long timeStamp;//时间戳 统一用 10 位的
+    private int hasRead;
 
     public Message() {
     }
@@ -28,6 +29,7 @@ public class Message implements Parcelable, IMessage {
         to = in.readParcelable(User.class.getClassLoader());
         content = in.readString();
         timeStamp = in.readLong();
+        hasRead = in.readInt();
     }
 
     public static final Creator<Message> CREATOR = new Creator<Message>() {
@@ -75,6 +77,14 @@ public class Message implements Parcelable, IMessage {
         this.timeStamp = timeStamp;
     }
 
+    public int getHasRead() {
+        return hasRead;
+    }
+
+    public void setHasRead(int hasRead) {
+        this.hasRead = hasRead;
+    }
+
     public String getTimeStringMsg() {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return simpleDateFormat.format(new Date(timeStamp));
@@ -102,10 +112,11 @@ public class Message implements Parcelable, IMessage {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeParcelable(from,0);
-        dest.writeParcelable(to,0);
+        dest.writeParcelable(from, 0);
+        dest.writeParcelable(to, 0);
         dest.writeString(content);
         dest.writeLong(timeStamp);
+        dest.writeInt(hasRead);
     }
 
     @Override
@@ -128,5 +139,18 @@ public class Message implements Parcelable, IMessage {
     @Override
     public Date getCreatedAt() {
         return new Date();
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        Message compare = (Message) o;
+        if (timeStamp > compare.getTimeStamp()) {
+            return 1;
+        } else if (timeStamp < compare.getTimeStamp()) {
+            return -1;
+        } else {
+
+            return 0;
+        }
     }
 }

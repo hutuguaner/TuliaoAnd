@@ -6,6 +6,8 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import androidx.sqlite.db.SimpleSQLiteQuery;
+
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.lzq.tuliaoand.App;
@@ -29,6 +31,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -47,6 +51,7 @@ public class MyService extends Service {
             @Override
             public void run() {
                 List<Message> messageList = getMessagesFromDB(oppositeEmail);
+
                 if (messageList != null && messageList.size() > 0) {
                     Event event = new Event();
                     event.messageList = messageList;
@@ -69,17 +74,40 @@ public class MyService extends Service {
 
         List<MessageForRoom> messageForRooms = new ArrayList<>();
 
-        List<MessageForRoom> oppositeSendToMe = App.myDatabase.messageDao().getMessagesBy(oppositeEmail, SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()));
-        for (int i = 0; i < oppositeSendToMe.size(); i++) {
-            Log.i("lala", "对方发给我 : " + oppositeSendToMe.get(i).getContent());
-        }
-        List<MessageForRoom> meSendToOpposite = App.myDatabase.messageDao().getMessagesBy(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()), oppositeEmail);
-        for (int i = 0; i < meSendToOpposite.size(); i++) {
-            Log.i("lala", "我发给对方 : " + meSendToOpposite.get(i).getContent());
-        }
+        List<MessageForRoom> meSendToOpposite = App.myDatabase.messageDao().getMessages(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()),oppositeEmail);
+        List<MessageForRoom> oppositeToMe = App.myDatabase.messageDao().getMessages(oppositeEmail,SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()));
 
-        messageForRooms.addAll(oppositeSendToMe);
         messageForRooms.addAll(meSendToOpposite);
+        messageForRooms.addAll(oppositeToMe);
+
+       /* messageForRooms = App.myDatabase.messageDao().getMessages();
+        Log.i("lala","消息数量 ： "+messageForRooms.size());
+
+        Iterator<MessageForRoom> iterator = messageForRooms.iterator();
+        while (iterator.hasNext()) {
+            MessageForRoom messageForRoom = iterator.next();
+            String from = messageForRoom.getFromEmail();
+            String to = messageForRoom.getToEmail();
+            Log.i("lala",from+" "+to+" "+" | "+SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName())+" "+oppositeEmail);
+            if (from.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))){
+                if (to.equals(oppositeEmail)){
+
+                }else{
+                    iterator.remove();
+                }
+            }else if (from.equals(oppositeEmail)){
+                if (to.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))){
+
+                }else{
+                    iterator.remove();
+                }
+            }else{
+                iterator.remove();
+            }
+
+        }*/
+
+
 
         List<Message> messages = new ArrayList<>();
         for (int i = 0; i < messageForRooms.size(); i++) {
@@ -93,6 +121,7 @@ public class MyService extends Service {
             message.setContent(conent);
             message.setTimeStamp(time);
             User fromUser = new User();
+
             fromUser.setEmail(fromEmail);
 
             User toUser = new User();
@@ -102,6 +131,7 @@ public class MyService extends Service {
 
             messages.add(message);
         }
+        Collections.sort(messages);
         return messages;
     }
 
@@ -145,6 +175,7 @@ public class MyService extends Service {
                 String msgToEmail = messageForRoom.getToEmail();
                 String content = messageForRoom.getContent();
                 long time = messageForRoom.getTimeStamp();
+                int hasRead = messageForRoom.getHasRead();
 
                 Message message = new Message();
                 User msgFromUser = new User();
@@ -155,6 +186,7 @@ public class MyService extends Service {
                 message.setTo(msgToUser);
                 message.setContent(content);
                 message.setTimeStamp(time);
+                message.setHasRead(hasRead);
 
 
                 Conversation conversation = new Conversation();
@@ -172,7 +204,8 @@ public class MyService extends Service {
                     int index = conversations.indexOf(conversation);
                     conversations.get(index).getMessages().add(message);
                 } else {
-                    conversations.add(conversation);
+                    if (conversation.getMe().getEmail().equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName())))
+                        conversations.add(conversation);
                 }
 
             }
@@ -198,7 +231,10 @@ public class MyService extends Service {
                 }
                 //上云
                 try {
-                    OkGo.<String>post(Const.UPLOAD_MSG).upJson(params).execute();
+                    okhttp3.Response response = OkGo.<String>post(Const.UPLOAD_MSG).upJson(params).execute();
+                    String result = response.body().string();
+                    //Log.i("lala", "消息上云 : " + result);
+                    response.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -270,7 +306,7 @@ public class MyService extends Service {
             @Override
             public void run() {
                 Event event = getUsers();
-                if (event != null && event.users != null && event.users.size() > 0)
+                if (event != null)
                     EventBus.getDefault().post(event);
 
             }
@@ -278,7 +314,7 @@ public class MyService extends Service {
 
         if (getUserTimer == null) getUserTimer = new Timer();
 
-        getUserTimer.schedule(getUserTask, 1000, 1000 * 5);
+        getUserTimer.schedule(getUserTask, 0, 1000 * 5);
 
     }
 
@@ -328,11 +364,11 @@ public class MyService extends Service {
             } else if (code == 1) {
                 String msg = result.getString("message");
             } else if (code == 2) {
+
                 event.isConnectTimeOut = true;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Log.i("lala", "ex : " + e.getMessage());
         }
         return event;
     }
@@ -361,7 +397,7 @@ public class MyService extends Service {
 
             @Override
             public void onSuccess(Response<String> response) {
-                Log.i("lala","上传位置 ： "+response.body());
+                //Log.i("lala", "上传位置 ： " + response.body());
                 try {
                     JSONObject result = new JSONObject(response.body());
                     int code = result.getInt("code");
@@ -403,6 +439,7 @@ public class MyService extends Service {
                         messageForRoom.setToEmail(message.getTo().getEmail());
                         messageForRoom.setContent(message.getContent());
                         messageForRoom.setTimeStamp(message.getTimeStamp());
+                        messageForRooms.add(messageForRoom);
                     }
                     App.myDatabase.messageDao().insert(messageForRooms);
                 }
@@ -434,6 +471,7 @@ public class MyService extends Service {
         try {
             okhttp3.Response response = OkGo.<String>post(Const.GET_MSGS).upJson(jsonObject).execute();
             JSONObject result = new JSONObject(response.body().string());
+            //Log.i("lala","从服务器获取消息 : "+result.toString());
             response.close();
             int code = result.getInt("code");
             if (code == 0) {

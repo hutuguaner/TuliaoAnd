@@ -127,7 +127,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
-    private void initMarker(double lng, double lat, String broadcast, String email, Marker marker) {
+    private Marker createMarker(double lng, double lat, String broadcast, String email) {
+        Marker marker = new Marker(mapView);
         marker.setPosition(new GeoPoint(lat, lng));
         marker.setOnMarkerClickListener(this);
         marker.setId(email);
@@ -155,6 +156,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
             marker.setView(textView);
         }
+        return marker;
     }
 
 
@@ -208,7 +210,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             return;
         }
         com.lzq.tuliaoand.subutil.util.LocationUtils.unregister();
-        unbindService(connection);
+        if (myService != null)
+            unbindService(connection);
         EventBus.getDefault().unregister(this);
         myService.stopGetMessageTask();
         myService.stopGetUserTask();
@@ -350,13 +353,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 break;
             case R.id.iv_main_paperairplane:
                 String broadMsg = etBroadcast.getText().toString();
-                if (!StringUtils.isTrimEmpty(broadMsg)) {
-                    if (broadMsg.length() > 20) {
-                        ToastUtils.showShort("最多输入20个字符");
-                        return;
-                    }
-                    myService.uploadBroadCast(broadMsg);
+                if (StringUtils.isTrimEmpty(broadMsg)) return;
+                if (broadMsg.length() > 20) {
+                    ToastUtils.showShort("最多输入20个字符");
+                    return;
                 }
+                myService.uploadBroadCast(broadMsg);
+                etBroadcast.setText("");
                 break;
         }
     }
@@ -376,7 +379,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     //---------------------------------
     @Override
     public void getLastKnownLocation(Location location) {
-        Log.i("lala", "getLastKnownLocation");
         if (location != null) {
             this.location = location;
             if (myService != null) {
@@ -387,7 +389,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     @Override
     public void onLocationChanged(Location location) {
-        Log.i("lala", "onLocationChanged");
         if (location != null) {
             this.location = location;
             if (myService != null) {
@@ -398,7 +399,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        Log.i("lala", "onStatusChanged");
 
     }
 
@@ -413,12 +413,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             return;
         } else {
             if (event.users != null && event.users.size() > 0) {
-                Log.i("lala", "用户量 ： " + event.users.size());
-                for (int i = 0; i < event.users.size(); i++) {
-                    User item = event.users.get(i);
-                    Log.i("lala", item.getBroadcast() + " " + item.getEmail() + " " + item.getLat() + " " + item.getLng());
-                }
+
                 updateUserList(event.users);
+
                 updateMarker();
             }
             if (event.messageList != null && event.messageList.size() > 0) {
@@ -443,6 +440,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     private void updateMarker() {
+
+
+
+        for (int i=0;i<userList.size();i++){
+            User user = userList.get(i);
+            Log.i("lala"," 获取到的当前用户 ： "+user.getEmail()+" "+user.getBroadcast()+" "+user.getLng()+" "+user.getLat());
+        }
+
         //先删掉 用户列表已经不存在 但是在地图上显示的 marker
         Set<String> keySet = markerMap.keySet();
         Iterator<String> iteratorKey = keySet.iterator();
@@ -451,7 +456,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             User user = new User();
             user.setEmail(key);
             if (!userList.contains(user)) {
-                Log.i("lala", "remove marker");
                 markerMap.remove(key);
                 mapView.getOverlayManager().remove(markerMap.get(key));
             }
@@ -461,22 +465,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         for (int i = 0; i < userList.size(); i++) {
             User user = userList.get(i);
             if (markerMap.containsKey(user.getEmail())) {
-                //更新mark
-                Marker marker = markerMap.get(user.getEmail());
-                marker.setPosition(new GeoPoint(user.getLat(), user.getLng()));
-                mapView.invalidate();
-            } else {
-                //添加marker
-                Log.i("lala", "add marker : " + Thread.currentThread().getName());
-                Marker marker = new Marker(mapView);
-                initMarker(user.getLng(), user.getLng(), user.getBroadcast(), user.getEmail(), marker);
+                //先删除已有再 重新添加
+                mapView.getOverlayManager().remove(markerMap.get(user.getEmail()));
+                markerMap.remove(user.getEmail());
 
-                mapView.getOverlayManager().add(marker);
-                mapView.invalidate();
-                markerMap.put(user.getEmail(), marker);
+            } else {
 
             }
+            Marker marker =  createMarker(user.getLng(), user.getLat(), user.getBroadcast(), user.getEmail());
+
+            markerMap.put(user.getEmail(), marker);
+            mapView.getOverlayManager().add(marker);
+
         }
+        mapView.invalidate();
     }
 
 

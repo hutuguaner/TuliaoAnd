@@ -125,7 +125,6 @@ public class RegistActivity extends BaseActivity implements View.OnClickListener
 
             @Override
             public void onSuccess(Response<String> response) {
-                Log.i("lala", "注册 ： " + response.body());
                 try {
                     JSONObject jsonObject = new JSONObject(response.body());
                     int code = jsonObject.getInt("code");
@@ -186,11 +185,9 @@ public class RegistActivity extends BaseActivity implements View.OnClickListener
 
             @Override
             public void onSuccess(Response<String> response) {
-                Log.i("lala", "获取验证码 ： " + response.body());
                 try {
                     JSONObject res = new JSONObject(response.body());
                     int code = res.getInt("code");
-                    Log.i("lala", "code : " + code);
                     if (code == 0) {
                         resetGetVerifyCodeState();
                         normal("验证码获取成功，请到您邮箱查看");

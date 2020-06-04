@@ -4,6 +4,8 @@ import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.RawQuery;
+import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.lzq.tuliaoand.bean.MessageForRoom;
 
@@ -22,7 +24,14 @@ public interface MessageDao {
     @Query("select * from message")
     List<MessageForRoom> getMessages();
 
-    @Query("select * from message where email_from=:fromEmail and email_to=:toEmail")
-    List<MessageForRoom> getMessagesBy(String fromEmail,String toEmail);
+
+    @Query("delete from message")
+    void delete();
+
+    @Query("select * from message where email_from=:from and email_to=:to")
+    List<MessageForRoom> getMessages(String from, String to);
+
+    @Query("update message set has_read = 1 where email_from=:from")
+    void setMessageHasReaded(String from);
 
 }

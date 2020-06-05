@@ -16,6 +16,7 @@ import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.bean.MessageForRoom;
 import com.lzq.tuliaoand.bean.User;
+import com.lzq.tuliaoand.bean.Version;
 import com.lzq.tuliaoand.common.Const;
 import com.lzq.tuliaoand.common.SPKey;
 import com.lzy.okgo.OkGo;
@@ -39,6 +40,65 @@ import java.util.TimerTask;
 
 public class MyService extends Service {
     public MyService() {
+    }
+
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    private TimerTask getVersionTask;
+    private Timer getVersionTimer;
+
+    public void startGetVersionTask() {
+        if (getVersionTask == null) getVersionTask = new TimerTask() {
+            @Override
+            public void run() {
+                if (!StringUtils.isTrimEmpty(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
+                    Version version = getVersion();
+                    if (version != null) {
+                        Event event = new Event();
+                        event.type = Event.TYPE_MAIN;
+                        event.version = version;
+                        EventBus.getDefault().post(event);
+
+                    }
+                }
+
+            }
+        };
+        if (getVersionTimer == null) getVersionTimer = new Timer();
+        getVersionTimer.schedule(getVersionTask, 1000 * 5, 1000 * 20);
+    }
+
+    public void stopGetVersionTask() {
+        if (getVersionTask != null) getVersionTask.cancel();
+        if (getVersionTimer != null) getVersionTimer.purge();
+        getVersionTask = null;
+    }
+
+    private Version getVersion() {
+        Version version = null;
+        try {
+            okhttp3.Response response = OkGo.<String>post(Const.GET_VERSION).execute();
+            String result = response.body().string();
+            Log.i("lala", " 获取版本信息 ： " + result);
+            response.close();
+            JSONObject jsonObject = new JSONObject(result);
+            int code = jsonObject.getInt("code");
+            if (code == 0) {
+                JSONObject data = jsonObject.getJSONObject("data");
+                version = new Version();
+                version.setVersionCode(data.getInt("versionCode"));
+                version.setVersionName(data.getString("versionName"));
+                version.setForceUpdate(data.getInt("forceUpdate"));
+                version.setVersionDesc(data.getString("versionDesc"));
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            version = null;
+        }
+
+        return version;
+
     }
 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -75,8 +135,8 @@ public class MyService extends Service {
 
         List<MessageForRoom> messageForRooms = new ArrayList<>();
 
-        List<MessageForRoom> meSendToOpposite = App.myDatabase.messageDao().getMessages(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()),oppositeEmail);
-        List<MessageForRoom> oppositeToMe = App.myDatabase.messageDao().getMessages(oppositeEmail,SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()));
+        List<MessageForRoom> meSendToOpposite = App.myDatabase.messageDao().getMessages(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()), oppositeEmail);
+        List<MessageForRoom> oppositeToMe = App.myDatabase.messageDao().getMessages(oppositeEmail, SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()));
 
         messageForRooms.addAll(meSendToOpposite);
         messageForRooms.addAll(oppositeToMe);
@@ -107,7 +167,6 @@ public class MyService extends Service {
             }
 
         }*/
-
 
 
         List<Message> messages = new ArrayList<>();
@@ -307,10 +366,13 @@ public class MyService extends Service {
         if (getUserTask == null) getUserTask = new TimerTask() {
             @Override
             public void run() {
-                Event event = getUsers();
-                if (event != null)
-                    event.type = Event.TYPE_MAIN;
+                if (!StringUtils.isTrimEmpty(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
+                    Event event = getUsers();
+                    if (event != null)
+                        event.type = Event.TYPE_MAIN;
                     EventBus.getDefault().post(event);
+                }
+
 
             }
         };
@@ -431,30 +493,33 @@ public class MyService extends Service {
         if (getMessageTask == null) getMessageTask = new TimerTask() {
             @Override
             public void run() {
-                List<Message> messageList = getMsgs();
-                if (messageList != null && messageList.size() > 0) {
+                if (!StringUtils.isTrimEmpty(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
+                    List<Message> messageList = getMsgs();
+                    if (messageList != null && messageList.size() > 0) {
 
 
-                    //
-                    List<MessageForRoom> messageForRooms = new ArrayList<>();
-                    for (int i = 0; i < messageList.size(); i++) {
-                        MessageForRoom messageForRoom = new MessageForRoom();
-                        Message message = messageList.get(i);
-                        messageForRoom.setFromEmail(message.getFrom().getEmail());
-                        messageForRoom.setToEmail(message.getTo().getEmail());
-                        messageForRoom.setContent(message.getContent());
-                        messageForRoom.setTimeStamp(message.getTimeStamp());
-                        messageForRooms.add(messageForRoom);
+                        //
+                        List<MessageForRoom> messageForRooms = new ArrayList<>();
+                        for (int i = 0; i < messageList.size(); i++) {
+                            MessageForRoom messageForRoom = new MessageForRoom();
+                            Message message = messageList.get(i);
+                            messageForRoom.setFromEmail(message.getFrom().getEmail());
+                            messageForRoom.setToEmail(message.getTo().getEmail());
+                            messageForRoom.setContent(message.getContent());
+                            messageForRoom.setTimeStamp(message.getTimeStamp());
+                            messageForRooms.add(messageForRoom);
+                        }
+                        App.myDatabase.messageDao().insert(messageForRooms);
+
+                        //告诉主页 有消息了
+                        Event event = new Event();
+                        event.messageList = messageList;
+                        event.type = Event.TYPE_MAIN;
+                        EventBus.getDefault().post(event);
+
                     }
-                    App.myDatabase.messageDao().insert(messageForRooms);
-
-                    //告诉主页 有消息了
-                    Event event = new Event();
-                    event.messageList = messageList;
-                    event.type = Event.TYPE_MAIN;
-                    EventBus.getDefault().post(event);
-
                 }
+
             }
         };
 

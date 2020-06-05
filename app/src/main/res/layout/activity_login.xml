@@ -22,7 +22,7 @@
         android:layout_marginLeft="@dimen/dp_33"
         android:layout_marginRight="@dimen/dp_33"
         android:layout_marginTop="@dimen/dp_128_5"
-        android:text="欢迎来到涂料APP\n无需注册可直接登录\n不要使用涉及个人信息的词汇作为登录名"
+        android:text="欢迎来到涂料APP\n一个简单的位置可见的沟通工具\n无需注册可直接输入任意字符串作为登录名"
         android:textColor="@android:color/white"
         android:textSize="@dimen/sp_17" />
 

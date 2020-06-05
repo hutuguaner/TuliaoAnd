@@ -12,6 +12,8 @@ public class Event {
 
     public boolean isConnectTimeOut = false;
 
+    public Version version;
+
     public int type;
 
     public static final int TYPE_MAIN = 0;//发给主页的 event

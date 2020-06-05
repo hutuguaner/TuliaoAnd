@@ -1,6 +1,7 @@
 package com.lzq.tuliaoand.activity;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -12,10 +13,12 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,7 +28,10 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.blankj.utilcode.constant.PermissionConstants;
 import com.blankj.utilcode.util.ActivityUtils;
+import com.blankj.utilcode.util.AppUtils;
+import com.blankj.utilcode.util.PermissionUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.ShadowUtils;
 import com.blankj.utilcode.util.StringUtils;
@@ -38,8 +44,16 @@ import com.lzq.tuliaoand.R;
 import com.lzq.tuliaoand.bean.Event;
 import com.lzq.tuliaoand.bean.Message;
 import com.lzq.tuliaoand.bean.User;
+import com.lzq.tuliaoand.common.Const;
 import com.lzq.tuliaoand.common.SPKey;
+import com.lzq.tuliaoand.dialog.DialogVersionToast;
+import com.lzq.tuliaoand.dialog.DialogVersionUpdating;
 import com.lzq.tuliaoand.services.MyService;
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.callback.FileCallback;
+import com.lzy.okgo.model.Progress;
+import com.lzy.okgo.model.Response;
+import com.lzy.okgo.request.base.Request;
 import com.orhanobut.logger.Logger;
 
 import org.greenrobot.eventbus.EventBus;
@@ -53,6 +67,7 @@ import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -93,6 +108,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             }
             myService.startGetUserTask();
             myService.startGetMessageTask();
+            myService.startGetVersionTask();
         }
 
         @Override
@@ -179,8 +195,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     protected void onResume() {
         super.onResume();
         mapView.onResume();
-
-        updataLocation();
+        if (!StringUtils.isTrimEmpty(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName())))
+            updataLocation();
 
     }
 
@@ -209,6 +225,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         EventBus.getDefault().unregister(this);
         myService.stopGetMessageTask();
         myService.stopGetUserTask();
+        myService.stopGetVersionTask();
     }
 
     private void initView() {
@@ -316,11 +333,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
 
-    private void startLoginActivity() {
-        Intent loginIntent = new Intent(MainActivity.this, LoginActivity.class);
-        startActivity(loginIntent);
-    }
-
     private void startMsgListActivity() {
         Intent conversationListIntent = new Intent(this, CommunicationListActivity.class);
         startActivity(conversationListIntent);
@@ -364,12 +376,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             startActivity(new Intent(this, LoginActivity.class));
             return;
         } else {
+            //
             if (event.users != null && event.users.size() > 0) {
 
                 updateUserList(event.users);
 
                 updateMarker();
             }
+            //
             if (event.messageList != null && event.messageList.size() > 0) {
                 if (ActivityUtils.getTopActivity() instanceof MainActivity) {
                     Log.i("lala", " 收到消息 ： " + "main");
@@ -402,8 +416,139 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     }
                 }
             }
+            //
+            if (event.version != null) {
+                int currVersionCode = AppUtils.getAppVersionCode();
+                if (event.version.getVersionCode() > currVersionCode) {
+                    //更新
+                    if (!(ActivityUtils.getTopActivity() instanceof MainActivity)) {
+                        return;
+                    }
+                    if (dialogVersionUpdating != null && dialogVersionUpdating.isShowing()) {
+                        return;
+                    }
+                    if (dialogVersionToast != null && dialogVersionToast.isShowing()) {
+                        return;
+                    }
+
+                    initUpdatToastDialog();
+                    dialogVersionToast.show(event.version.getVersionDesc(), new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            checkForceUpdateStoragePermission();
+                        }
+                    });
+                }
+            }
         }
 
+    }
+
+    private DialogVersionToast dialogVersionToast = null;
+
+    private void initUpdatToastDialog() {
+        if (dialogVersionToast == null) dialogVersionToast = new DialogVersionToast(this);
+    }
+
+    //申请下载安装apk的 存储权限
+    private void checkForceUpdateStoragePermission() {
+        boolean isGrantedStorage = PermissionUtils.isGranted(PermissionConstants.STORAGE);
+        if (!isGrantedStorage) {
+            PermissionUtils.permission(PermissionConstants.STORAGE).callback(new PermissionUtils.SimpleCallback() {
+                @Override
+                public void onGranted() {
+                    checkForceUpdateUnknowSourcePermission();
+                }
+
+                @Override
+                public void onDenied() {
+                    Toast.makeText(MainActivity.this, "没有存储权限无法更新，将无法使用", Toast.LENGTH_LONG).show();
+                    MainActivity.this.finish();
+                }
+            }).request();
+        } else {
+            checkForceUpdateUnknowSourcePermission();
+        }
+
+
+    }
+
+    //申请下载安装apk的 安装未知来源的 权限
+    private void checkForceUpdateUnknowSourcePermission() {
+        if (Build.VERSION.SDK_INT >= 26) {
+            boolean hasRequestPackageInstallPermission = getPackageManager().canRequestPackageInstalls();
+            if (hasRequestPackageInstallPermission) {
+                initUpdatingDialog();
+                downloadApk();
+            } else {
+                Uri packageUri = Uri.parse("package:" + AppUtils.getAppPackageName());
+                Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, packageUri);
+                startActivityForResult(intent, 10086);
+            }
+        } else {
+            initUpdatingDialog();
+            downloadApk();
+        }
+    }
+
+    private DialogVersionUpdating dialogVersionUpdating = null;
+
+    private void initUpdatingDialog() {
+        if (dialogVersionUpdating == null) dialogVersionUpdating = new DialogVersionUpdating(this);
+    }
+
+    private void downloadApk() {
+        OkGo.<File>get(Const.APK_URL).execute(new FileCallback() {
+            @Override
+            public void onStart(Request<File, ? extends Request> request) {
+                super.onStart(request);
+                dialogVersionToast.dismis();
+                dialogVersionUpdating.show();
+            }
+
+            @Override
+            public void onSuccess(Response<File> response) {
+                AppUtils.installApp(response.body().getPath());
+            }
+
+            @Override
+            public void onError(Response<File> response) {
+                super.onError(response);
+                ToastUtils.showLong(response.message());
+            }
+
+            @Override
+            public void onFinish() {
+                super.onFinish();
+                dialogVersionUpdating.dismis();
+            }
+
+            @Override
+            public void downloadProgress(Progress progress) {
+                super.downloadProgress(progress);
+                if (Build.VERSION.SDK_INT >= 24) {
+                    dialogVersionUpdating.setProgress((int) ((double) progress.currentSize / progress.totalSize * 100), true);
+                } else {
+                    dialogVersionUpdating.setProgress((int) ((double) progress.currentSize / progress.totalSize * 100));
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case 10086://申请安装未知来源的 app
+                //
+                if (resultCode == RESULT_OK) {
+                    initUpdatingDialog();
+                    downloadApk();
+                } else if (resultCode == RESULT_CANCELED) {
+                    ToastUtils.showLong("请打开“允许安装应用”开关");
+                }
+                break;
+        }
     }
 
     private void updateUserList(List<User> users) {
@@ -451,7 +596,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public boolean onMarkerClick(Marker marker, MapView mapView) {
         String email = marker.getId();
         if (email.equals(SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName()))) {
-            ToastUtils.showShort("你自己");
+            ToastUtils.showShort("你自己: " + email);
         } else {
 
             Intent intent = new Intent(this, ConversationActivity.class);

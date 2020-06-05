@@ -1,13 +1,21 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('D:\\AndroidStudioProjects\\TuliaoAnd\\keystore.jks')
+            storePassword '000000'
+            keyAlias = 'key0'
+            keyPassword '000000'
+        }
+    }
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "com.lzq.tuliaoand"
         minSdkVersion 19
         targetSdkVersion 29
-        versionCode 1
+        versionCode 3
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

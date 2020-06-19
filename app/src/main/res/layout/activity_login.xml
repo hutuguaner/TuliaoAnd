@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@mipmap/bg_login"
+    android:orientation="vertical"
     tools:context=".LoginActivity">
 
     <TextView
@@ -20,9 +21,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="@dimen/dp_33"
+        android:layout_marginTop="@dimen/dp_16"
         android:layout_marginRight="@dimen/dp_33"
-        android:layout_marginTop="@dimen/dp_128_5"
-        android:text="欢迎来到涂料APP\n一个简单的位置可见的沟通工具\n无需注册可直接输入任意字符串作为登录名"
+        android:text="欢迎来到涂料APP\n一个简单的位置可见的沟通工具"
         android:textColor="@android:color/white"
         android:textSize="@dimen/sp_17" />
 
@@ -31,7 +32,8 @@
         android:layout_width="@dimen/dp_315"
         android:layout_height="@dimen/dp_54_5"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="@dimen/dp_250"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/dp_46"
         android:background="@mipmap/ic_kuang_gray">
 
         <ImageView
@@ -42,16 +44,46 @@
             android:src="@mipmap/ic_phone" />
 
         <EditText
-
             android:id="@+id/et_login_email"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginLeft="@dimen/dp_50"
             android:layout_marginRight="@dimen/dp_21"
             android:background="@null"
-            android:hint="登录名"
+            android:hint="手机号"
             android:inputType="textEmailAddress"
             android:textColor="@android:color/white"
+            android:textColorHint="@android:color/white"
+            android:textSize="@dimen/sp_15" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="@dimen/dp_315"
+        android:layout_height="@dimen/dp_54_5"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/dp_10"
+        android:background="@mipmap/ic_kuang_gray">
+
+        <ImageView
+            android:layout_width="@dimen/dp_14"
+            android:layout_height="@dimen/dp_18_5"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/dp_21"
+            android:src="@mipmap/ic_lock" />
+
+        <EditText
+            android:id="@+id/et_login_pwd"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="@dimen/dp_50"
+            android:layout_marginRight="@dimen/dp_21"
+            android:background="@null"
+            android:hint="密码"
+            android:inputType="textEmailAddress"
+            android:textColor="@android:color/white"
+            android:textColorHint="@android:color/white"
             android:textSize="@dimen/sp_15" />
 
     </RelativeLayout>
@@ -61,12 +93,39 @@
         android:layout_width="@dimen/dp_315"
         android:layout_height="@dimen/dp_54_5"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="@dimen/dp_329_5"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/dp_20"
         android:background="@mipmap/ic_kuang_yellow"
         android:text="登录"
         android:textColor="@color/login"
         android:textSize="@dimen/sp_17" />
 
 
+    <RelativeLayout
+        android:layout_width="@dimen/dp_315"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/dp_20">
 
-</RelativeLayout>
+        <TextView
+            android:id="@+id/tv_login_regist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="注册"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/sp_14" />
+
+
+        <TextView
+            android:id="@+id/tv_login_resetpwd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:text="密码重置"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/sp_14" />
+
+    </RelativeLayout>
+
+
+</LinearLayout>

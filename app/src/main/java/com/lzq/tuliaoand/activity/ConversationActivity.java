@@ -59,7 +59,6 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             MyService.MyBinder myBinder = (MyService.MyBinder) iBinder;
             myService = myBinder.getService();
-            myService.startGetMessageFromDBTask(oppositeEmail);
         }
 
         @Override
@@ -114,7 +113,6 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
     protected void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
-        if (myService != null) myService.stopGetMessageFromDBTask();
         unbindService(serviceConnection);
     }
 
@@ -147,7 +145,7 @@ public class ConversationActivity extends BaseActivity implements View.OnClickLi
                         message.setTimeStamp(System.currentTimeMillis() / 1000);
                         message.setFrom(fromUser);
                         message.setTo(toUser);
-                        myService.sendMessage(message);
+                        myService.sendChatMsgToServer(message);
                     } else {
                         ToastUtils.showShort("输入内容过长");
                     }

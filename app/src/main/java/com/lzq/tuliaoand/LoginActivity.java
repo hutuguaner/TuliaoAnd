@@ -43,8 +43,9 @@ import pub.devrel.easypermissions.EasyPermissions;
 
 public class LoginActivity extends BaseActivity implements View.OnClickListener {
 
-    private EditText etEmail;
+    private EditText etEmail, etPwd;
     private Button btLogin;
+    private TextView tvRegist, tvResetPwd;
 
 
     @Override
@@ -108,9 +109,14 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
         if (!StringUtils.isEmpty(emailLogined)) {
             etEmail.setText(emailLogined);
         }
+        etPwd = findViewById(R.id.et_login_pwd);
         btLogin = findViewById(R.id.bt_login_login);
         //
         btLogin.setOnClickListener(this);
+        tvRegist = findViewById(R.id.tv_login_regist);
+        tvResetPwd = findViewById(R.id.tv_login_resetpwd);
+        tvRegist.setOnClickListener(this);
+        tvResetPwd.setOnClickListener(this);
     }
 
     @Override
@@ -118,6 +124,12 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
         switch (v.getId()) {
             case R.id.bt_login_login:
                 loginCheck();
+                break;
+            case R.id.tv_login_regist:
+                startActivity(new Intent(this, RegistActivity.class));
+                break;
+            case R.id.tv_login_resetpwd:
+                startActivity(new Intent(this, ResetPwdActivity.class));
                 break;
         }
     }
@@ -138,9 +150,15 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener 
             ToastUtils.showLong("请输入邮箱");
             return;
         }
+        pwd = etPwd.getText().toString();
+        if (StringUtils.isTrimEmpty(pwd)) {
+            ToastUtils.showLong("请输入密码");
+            return;
+        }
         JSONObject params = new JSONObject();
         try {
             params.put("email", email);
+            params.put("password", pwd);
         } catch (JSONException e) {
             e.printStackTrace();
         }

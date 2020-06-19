@@ -51,7 +51,6 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             MyService.MyBinder myBinder = (MyService.MyBinder) iBinder;
             myService = myBinder.getService();
-            myService.startGetConversationFromDbTask();
         }
 
         @Override
@@ -73,7 +72,6 @@ public class CommunicationListActivity extends BaseActivity implements View.OnCl
     protected void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
-        if (myService != null) myService.stopGetConversationFromDBTask();
         unbindService(serviceConnection);
     }
 

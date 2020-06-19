@@ -29,10 +29,15 @@ import org.osmdroid.config.Configuration;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 
+import io.socket.client.IO;
+import io.socket.client.Socket;
 import okhttp3.OkHttpClient;
 
 public class App extends Application {
+
+    private Socket socket;
 
 
     @SuppressLint("MissingPermission")
@@ -50,10 +55,26 @@ public class App extends Application {
         myDatabase = Room.databaseBuilder(getApplicationContext(), MyDatabase.class, "tuliao.db").allowMainThreadQueries().build();
         //
         initYouMeng();
+        //
+        initSocket();
     }
 
 
-    private void initYouMeng(){
+    public Socket getSocket() {
+        return socket;
+    }
+
+    private void initSocket() {
+        if (socket == null) {
+            try {
+                socket = IO.socket("http://" + Const.ip() + ":8000");
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void initYouMeng() {
         // 初始化SDK
         UMConfigure.init(this, "5ed90c4b167edd9b9b000032", "Umeng", UMConfigure.DEVICE_TYPE_PHONE, null);
         // 选用AUTO页面采集模式
@@ -107,7 +128,6 @@ public class App extends Application {
     public static MyDatabase myDatabase = null;
 
 
-
 }
 
 
@@ -127,6 +147,12 @@ public class App extends Application {
  * limitations under the License.
  * <p>
  * https://icons8.com/icons/set/bubble
+ * <p>
+ * https://icons8.com/icons/set/bubble
+ * <p>
+ * Copyright (C) 2012-2020 Markus Junginger, greenrobot (https://greenrobot.org)
+ * <p>
+ * EventBus binaries and source code can be used according to the Apache License, Version 2.0.
  */
 
 /**

@@ -50,7 +50,9 @@ import com.lzq.tuliaoand.dialog.DialogVersionToast;
 import com.lzq.tuliaoand.dialog.DialogVersionUpdating;
 import com.lzq.tuliaoand.services.MyService;
 import com.lzy.okgo.OkGo;
+import com.lzy.okgo.callback.Callback;
 import com.lzy.okgo.callback.FileCallback;
+import com.lzy.okgo.callback.StringCallback;
 import com.lzy.okgo.model.Progress;
 import com.lzy.okgo.model.Response;
 import com.lzy.okgo.request.base.Request;
@@ -59,6 +61,9 @@ import com.orhanobut.logger.Logger;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
@@ -104,10 +109,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             myService = myBinder.getService();
 
             if (location != null) {
-                myService.uploadPosition(location.getLongitude(), location.getLatitude());
+                myService.sendPositionToServer();
             }
-            myService.startGetUserTask();
-            myService.startGetMessageTask();
             myService.startGetVersionTask();
         }
 
@@ -223,8 +226,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         if (myService != null)
             unbindService(connection);
         EventBus.getDefault().unregister(this);
-        myService.stopGetMessageTask();
-        myService.stopGetUserTask();
         myService.stopGetVersionTask();
     }
 
@@ -268,6 +269,72 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     //--------------------------------------------------------------------------------------------------------------------------------------------------------
 
+    private void getUsers() {
+        String me = SPUtils.getInstance().getString(SPKey.EMAIL_LOGINED.getUniqueName());
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("email", me);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        OkGo.<String>post(Const.GET_ALL_USERS).upJson(jsonObject).execute(new StringCallback() {
+            @Override
+            public void onStart(Request<String, ? extends Request> request) {
+                super.onStart(request);
+                show();
+            }
+
+            @Override
+            public void onError(Response<String> response) {
+                super.onError(response);
+                error(response.body());
+            }
+
+            @Override
+            public void onSuccess(Response<String> response) {
+                try {
+                    JSONObject result = new JSONObject(response.body());
+                    int code = result.getInt("code");
+                    if (code == 0) {
+                        JSONArray data = result.getJSONArray("data");
+                        List<User> users = new ArrayList<>();
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject item = data.getJSONObject(i);
+                            String email = item.getString("email");
+                            String broadcast = item.getString("broadcast");
+                            String lng = item.getString("lng");
+                            String lat = item.getString("lat");
+                            User user = new User();
+                            user.setEmail(email);
+                            user.setBroadcast(broadcast);
+                            if (!StringUtils.isTrimEmpty(lng))
+                                user.setLng(Double.parseDouble(lng));
+                            if (!StringUtils.isTrimEmpty(lat))
+                                user.setLat(Double.parseDouble(lat));
+                            users.add(user);
+                        }
+                        updateUserList(users);
+
+                        updateMarker();
+
+
+                    } else if (code == 1) {
+                        String msg = result.getString("message");
+                    } else if (code == 2) {
+
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                super.onFinish();
+                dismiss();
+            }
+        });
+    }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -285,7 +352,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         } else {
             this.location = location;
             if (myService != null) {
-                myService.uploadPosition(this.location.getLongitude(), this.location.getLatitude());
+                myService.sendPositionToServer();
             }
             mapZoomTo(this.location.getLongitude(), this.location.getLatitude());
 
@@ -326,7 +393,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     ToastUtils.showShort("最多输入20个字符");
                     return;
                 }
-                myService.uploadBroadCast(broadMsg);
+                myService.sendBroadcastToServer(broadMsg);
                 etBroadcast.setText("");
                 break;
         }
@@ -345,7 +412,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         if (location != null) {
             this.location = location;
             if (myService != null) {
-                myService.uploadPosition(this.location.getLongitude(), this.location.getLatitude());
+                myService.sendPositionToServer();
             }
         }
     }
@@ -355,7 +422,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         if (location != null) {
             this.location = location;
             if (myService != null) {
-                myService.uploadPosition(this.location.getLongitude(), this.location.getLatitude());
+                myService.sendPositionToServer();
             }
         }
     }

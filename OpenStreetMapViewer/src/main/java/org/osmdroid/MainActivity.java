@@ -1,6 +1,7 @@
 // Created by plusminus on 18:23:13 - 03.10.2008
 package org.osmdroid;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -11,9 +12,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.text.format.Formatter;
 import android.view.View;
 import android.widget.AdapterView;
@@ -21,10 +19,14 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+
 import org.osmdroid.config.Configuration;
 import org.osmdroid.debug.CacheAnalyzerActivity;
 import org.osmdroid.diag.DiagnosticsActivity;
 import org.osmdroid.intro.IntroActivity;
+import org.osmdroid.library.BuildConfig;
 import org.osmdroid.samples.SampleExtensive;
 import org.osmdroid.samples.SampleWithMinimapItemizedoverlay;
 import org.osmdroid.samples.SampleWithMinimapZoomcontrols;

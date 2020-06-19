@@ -2,7 +2,7 @@ package com.lzq.tuliaoand.common;
 
 public class Const {
 
-    public static final boolean isRelease = true;
+    public static final boolean isRelease = false;
 
     public static String ip() {
         if (isRelease) {
@@ -10,7 +10,8 @@ public class Const {
         } else {
             //return "192.168.1.13";
             //return "192.168.1.4";
-            return "192.168.1.180";
+            //return "192.168.1.180";
+            return "192.168.0.185";
         }
     }
 
@@ -27,10 +28,7 @@ public class Const {
     public static final String REGIST = "http://" + ip() + ":" + port() + "/regist";//注册
     public static final String LOGIN = "http://" + ip() + ":" + port() + "/login";//登录
     public static final String GET_ALL_USERS = "http://" + ip() + ":" + port() + "/getUsers";//获取所有用户数据
-    public static final String UPLOAD_POSITION = "http://" + ip() + ":" + port() + "/uploadPosition";//上传位置信息
-    public static final String UPLOAD_MSG = "http://" + ip() + ":" + port() + "/uploadMsg";//上传消息数据
     public static final String GET_MSGS = "http://" + ip() + ":" + port() + "/getMsgs";//获取消息
-    public static final String UPLOAD_BROADCAST = "http://" + ip() + ":" + port() + "/uploadBroadcast";//上传广播
     public static final String GET_VERSION = "http://" + ip() + ":" + port() + "/getVersion";//上传广播
 
     public static final String APK_URL = "https://apk-lzq-1255312373.cos.ap-hongkong.myqcloud.com/tuliao.apk";
